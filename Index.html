@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Task Time Calculator</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+  :root{
+    --bg: #05070c;
+    --panel: rgba(20,28,42,0.5);
+    --border: rgba(120,200,255,0.18);
+    --text: #eaf3fb;
+    --text-dim: #8fa3bd;
+    --cyan: #3ee6ff;
+    --red: #ff5c7a;
+  }
+  *{ box-sizing: border-box; }
+  body{
+    margin: 0;
+    min-height: 100vh;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  .mono{ font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; }
+
+  .card{
+    width: 100%;
+    max-width: 380px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    backdrop-filter: blur(18px) saturate(140%);
+    padding: 28px 26px 26px;
+    box-shadow: 0 0 30px rgba(62,230,255,0.08);
+  }
+  h1{
+    font-size: 1.1rem;
+    margin: 0 0 18px;
+    letter-spacing: 0.02em;
+  }
+
+  /* Tabs */
+  .tabs{
+    display: flex;
+    gap: 6px;
+    margin-bottom: 20px;
+    background: rgba(0,0,0,0.2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 4px;
+  }
+  .tab-btn{
+    flex: 1;
+    border: none;
+    background: transparent;
+    color: var(--text-dim);
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 9px 6px;
+    border-radius: 9px;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+  .tab-btn.active{
+    background: rgba(62,230,255,0.14);
+    color: var(--cyan);
+  }
+  .tab-panel{ display: none; }
+  .tab-panel.active{ display: block; }
+
+  .field{ margin-bottom: 16px; }
+  .field label{
+    display: block;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+  }
+  .field input{
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: rgba(0,0,0,0.2);
+    color: var(--text);
+    font-size: 1rem;
+    outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+  .field input:focus{
+    border-color: var(--cyan);
+    box-shadow: 0 0 0 3px rgba(62,230,255,0.18);
+  }
+  .field input.error{
+    border-color: var(--red);
+    box-shadow: 0 0 0 3px rgba(255,92,122,0.18);
+  }
+
+  .row-2{
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .error-msg{
+    color: var(--red);
+    font-size: 0.8rem;
+    margin: 2px 0 10px;
+    min-height: 1em;
+  }
+
+  .result{
+    margin-top: 8px;
+    padding: 18px;
+    border-radius: 14px;
+    background: rgba(0,0,0,0.18);
+    border: 1px solid var(--border);
+    text-align: center;
+  }
+  .result-label{
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+  }
+  .result-value{
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--cyan);
+  }
+  .result-sub{
+    font-size: 0.78rem;
+    color: var(--text-dim);
+    margin-top: 6px;
+  }
+  .result-divider{
+    height: 1px;
+    background: var(--border);
+    margin: 12px 0;
+    border: none;
+  }
+  .result-mini{
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.78rem;
+    color: var(--text-dim);
+    margin-top: 6px;
+  }
+  .result-mini span:last-child{
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+  }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <h1>Task Time Calculator</h1>
+
+  <div class="tabs">
+    <button class="tab-btn active" id="tabBtnSimple" type="button">Simple</button>
+    <button class="tab-btn" id="tabBtnReview" type="button">Peer Review + Triage</button>
+    <button class="tab-btn" id="tabBtnRate" type="button">Task Rate</button>
+  </div>
+
+  <!-- TAB 1: original simple calculator -->
+  <div class="tab-panel active" id="tabSimple">
+    <div class="field">
+      <label for="target">Target Tasks per Hour</label>
+      <input type="text" inputmode="decimal" id="target" class="mono" value="14">
+    </div>
+
+    <div class="field">
+      <label for="tasks">Tasks Completed</label>
+      <input type="text" inputmode="decimal" id="tasks" class="mono" value="20">
+    </div>
+
+    <div class="error-msg" id="errorMsg"></div>
+
+    <div class="result">
+      <div class="result-label">Time Taken</div>
+      <div class="result-value mono" id="friendlyTime">--</div>
+      <div class="result-sub mono" id="exactTime">--</div>
+    </div>
+  </div>
+
+  <!-- TAB 2: peer review + full triage calculator -->
+  <div class="tab-panel" id="tabReview">
+    <div class="field">
+      <label for="peerReview">Peer Review Tasks</label>
+      <input type="text" inputmode="decimal" id="peerReview" class="mono" value="8">
+    </div>
+
+    <div class="field">
+      <label for="fullTriage">Full Triage Tasks</label>
+      <input type="text" inputmode="decimal" id="fullTriage" class="mono" value="6">
+    </div>
+
+    <div class="row-2">
+      <div class="field">
+        <label for="hourInput">Hours Worked</label>
+        <input type="text" inputmode="decimal" id="hourInput" class="mono" value="1">
+      </div>
+      <div class="field">
+        <label for="minsInput">Minutes Worked</label>
+        <input type="text" inputmode="decimal" id="minsInput" class="mono" value="30">
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="targetRate">Task / Per Hour Rate</label>
+      <input type="text" inputmode="decimal" id="targetRate" class="mono" value="14">
+    </div>
+
+    <div class="error-msg" id="errorMsgReview"></div>
+
+    <div class="result">
+      <div class="result-label">Log for Peer Review</div>
+      <div class="result-value mono" id="reviewTimeFriendly">--</div>
+      <div class="result-sub mono" id="reviewTimeExact">--</div>
+
+      <hr class="result-divider">
+
+      <div class="result-label">Log for Full Triage</div>
+      <div class="result-value mono" id="triageTimeFriendly">--</div>
+      <div class="result-sub mono" id="triageTimeExact">--</div>
+
+      <hr class="result-divider">
+
+      <div class="result-mini">
+        <span>Total time worked</span>
+        <span id="totalTimeOut">--</span>
+      </div>
+      <div class="result-mini">
+        <span>Your rate</span>
+        <span id="achievedRateOut">--</span>
+      </div>
+      <div class="result-mini">
+        <span>Target rate</span>
+        <span id="rateUsedOut">--</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 3: task rate calculator -->
+  <div class="tab-panel" id="tabRate">
+    <div class="field">
+      <label for="rateTasks">Tasks Completed</label>
+      <input type="text" inputmode="decimal" id="rateTasks" class="mono" value="20">
+    </div>
+
+    <div class="row-2">
+      <div class="field">
+        <label for="rateHourInput">Hours</label>
+        <input type="text" inputmode="decimal" id="rateHourInput" class="mono" value="1">
+      </div>
+      <div class="field">
+        <label for="rateMinsInput">Minutes</label>
+        <input type="text" inputmode="decimal" id="rateMinsInput" class="mono" value="30">
+      </div>
+    </div>
+
+    <div class="error-msg" id="errorMsgRate"></div>
+
+    <div class="result">
+      <div class="result-label">Task Rate</div>
+      <div class="result-value mono" id="taskRateFriendly">--</div>
+      <div class="result-sub mono" id="taskRateExact">--</div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+
+  function parseNum(raw, allowZero) {
+    if (raw === null || raw === undefined) return null;
+    const str = String(raw).trim();
+    if (str === '') return null;
+    const n = Number(str);
+    if (Number.isNaN(n) || !Number.isFinite(n)) return null;
+    if (allowZero) { if (n < 0) return null; } else { if (n <= 0) return null; }
+    if (n > 1e9) return null;
+    return n;
+  }
+
+  function friendlyHours(totalHours) {
+    const totalMinutes = Math.round(totalHours * 60);
+    const h = Math.floor(totalMinutes / 60);
+    const m = totalMinutes % 60;
+    if (h > 0 && m > 0) return h + 'h ' + m + 'm';
+    if (h > 0) return h + 'h';
+    return m + 'm';
+  }
+
+  // ---------- TAB 1: Simple ----------
+  function recalcSimple() {
+    $('target').classList.remove('error');
+    $('tasks').classList.remove('error');
+
+    const target = parseNum($('target').value);
+    const tasks = parseNum($('tasks').value);
+
+    let errMsg = '';
+    if (target === null) { $('target').classList.add('error'); errMsg = 'Enter a target greater than 0.'; }
+    if (tasks === null) { $('tasks').classList.add('error'); errMsg = errMsg || 'Enter a number of tasks greater than 0.'; }
+
+    if (errMsg) {
+      $('errorMsg').textContent = errMsg;
+      $('friendlyTime').textContent = '--';
+      $('exactTime').textContent = '--';
+      return;
+    }
+
+    $('errorMsg').textContent = '';
+
+    const totalHours = tasks / target;
+    const totalMinutes = totalHours * 60;
+
+    $('friendlyTime').textContent = friendlyHours(totalHours);
+    $('exactTime').textContent = totalHours.toFixed(2) + ' hours (' + totalMinutes.toFixed(1) + ' minutes)';
+  }
+
+  $('target').addEventListener('input', recalcSimple);
+  $('tasks').addEventListener('input', recalcSimple);
+
+  // ---------- TAB 2: Peer Review + Full Triage ----------
+  function recalcReview() {
+    ['peerReview', 'fullTriage', 'hourInput', 'minsInput', 'targetRate'].forEach(id => $(id).classList.remove('error'));
+
+    const peerReview = parseNum($('peerReview').value, true);
+    const fullTriage = parseNum($('fullTriage').value, true);
+    const hourVal = parseNum($('hourInput').value, true);
+    const minsVal = parseNum($('minsInput').value, true);
+    const targetRate = parseNum($('targetRate').value);
+
+    let errMsg = '';
+    if (peerReview === null) { $('peerReview').classList.add('error'); errMsg = 'Enter peer review tasks (0 or more).'; }
+    if (fullTriage === null) { $('fullTriage').classList.add('error'); errMsg = errMsg || 'Enter full triage tasks (0 or more).'; }
+    if (hourVal === null) { $('hourInput').classList.add('error'); errMsg = errMsg || 'Enter hours worked (0 or more).'; }
+    if (minsVal === null) { $('minsInput').classList.add('error'); errMsg = errMsg || 'Enter minutes worked (0 or more).'; }
+    if (targetRate === null) { $('targetRate').classList.add('error'); errMsg = errMsg || 'Enter a task/hour rate greater than 0.'; }
+
+    const totalTasks = (peerReview || 0) + (fullTriage || 0);
+    const totalTimeHours = (hourVal || 0) + (minsVal || 0) / 60;
+
+    if (!errMsg && totalTasks <= 0) {
+      errMsg = 'Enter at least one peer review or full triage task.';
+    }
+    if (!errMsg && totalTimeHours <= 0) {
+      errMsg = 'Enter hours/minutes worked greater than 0.';
+    }
+
+    if (errMsg) {
+      $('errorMsgReview').textContent = errMsg;
+      $('reviewTimeFriendly').textContent = '--';
+      $('reviewTimeExact').textContent = '--';
+      $('triageTimeFriendly').textContent = '--';
+      $('triageTimeExact').textContent = '--';
+      $('totalTimeOut').textContent = '--';
+      $('achievedRateOut').textContent = '--';
+      $('rateUsedOut').textContent = '--';
+      return;
+    }
+
+    $('errorMsgReview').textContent = '';
+
+    // Split the total worked time between the two task types,
+    // proportional to how many of each you did.
+    const reviewShare = peerReview / totalTasks;
+    const triageShare = fullTriage / totalTasks;
+    const reviewHours = totalTimeHours * reviewShare;
+    const triageHours = totalTimeHours * triageShare;
+
+    const achievedRate = totalTasks / totalTimeHours;
+
+    $('reviewTimeFriendly').textContent = friendlyHours(reviewHours);
+    $('reviewTimeExact').textContent = reviewHours.toFixed(2) + 'h (' + (reviewHours * 60).toFixed(1) + ' min) for ' + peerReview + ' task(s)';
+
+    $('triageTimeFriendly').textContent = friendlyHours(triageHours);
+    $('triageTimeExact').textContent = triageHours.toFixed(2) + 'h (' + (triageHours * 60).toFixed(1) + ' min) for ' + fullTriage + ' task(s)';
+
+    $('totalTimeOut').textContent = friendlyHours(totalTimeHours) + ' (' + totalTasks + ' tasks)';
+    $('achievedRateOut').textContent = achievedRate.toFixed(2) + ' /hr';
+    $('rateUsedOut').textContent = targetRate + ' /hr';
+  }
+
+  ['peerReview', 'fullTriage', 'hourInput', 'minsInput', 'targetRate'].forEach(id => {
+    $(id).addEventListener('input', recalcReview);
+  });
+
+  // ---------- TAB 3: Task Rate ----------
+  function recalcRate() {
+    ['rateTasks', 'rateHourInput', 'rateMinsInput'].forEach(id => $(id).classList.remove('error'));
+
+    const tasks = parseNum($('rateTasks').value);
+    const hourVal = parseNum($('rateHourInput').value, true);
+    const minsVal = parseNum($('rateMinsInput').value, true);
+
+    let errMsg = '';
+    if (tasks === null) { $('rateTasks').classList.add('error'); errMsg = 'Enter a number of tasks greater than 0.'; }
+    if (hourVal === null) { $('rateHourInput').classList.add('error'); errMsg = errMsg || 'Enter hours (0 or more).'; }
+    if (minsVal === null) { $('rateMinsInput').classList.add('error'); errMsg = errMsg || 'Enter minutes (0 or more).'; }
+
+    const totalHours = (hourVal || 0) + (minsVal || 0) / 60;
+    if (!errMsg && totalHours <= 0) {
+      errMsg = 'Enter hours/minutes greater than 0.';
+    }
+
+    if (errMsg) {
+      $('errorMsgRate').textContent = errMsg;
+      $('taskRateFriendly').textContent = '--';
+      $('taskRateExact').textContent = '--';
+      return;
+    }
+
+    $('errorMsgRate').textContent = '';
+
+    const rate = tasks / totalHours;
+
+    $('taskRateFriendly').textContent = rate.toFixed(2) + ' /hr';
+    $('taskRateExact').textContent = tasks + ' tasks over ' + friendlyHours(totalHours) + ' (' + totalHours.toFixed(2) + 'h)';
+  }
+
+  ['rateTasks', 'rateHourInput', 'rateMinsInput'].forEach(id => {
+    $(id).addEventListener('input', recalcRate);
+  });
+
+  // ---------- Tab switching ----------
+  function showTab(name) {
+    $('tabSimple').classList.toggle('active', name === 'simple');
+    $('tabReview').classList.toggle('active', name === 'review');
+    $('tabRate').classList.toggle('active', name === 'rate');
+    $('tabBtnSimple').classList.toggle('active', name === 'simple');
+    $('tabBtnReview').classList.toggle('active', name === 'review');
+    $('tabBtnRate').classList.toggle('active', name === 'rate');
+  }
+  $('tabBtnSimple').addEventListener('click', () => showTab('simple'));
+  $('tabBtnReview').addEventListener('click', () => showTab('review'));
+  $('tabBtnRate').addEventListener('click', () => showTab('rate'));
+
+  recalcSimple();
+  recalcReview();
+  recalcRate();
+})();
+</script>
+
+</body>
+</html>
