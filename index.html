@@ -165,7 +165,7 @@
 
   <div class="tabs">
     <button class="tab-btn active" id="tabBtnSimple" type="button">Simple</button>
-    <button class="tab-btn" id="tabBtnReview" type="button">Peer Review - Full Triage - Adhoc</button>
+    <button class="tab-btn" id="tabBtnReview" type="button">Peer Review + Triage</button>
     <button class="tab-btn" id="tabBtnRate" type="button">Task Rate</button>
   </div>
 
@@ -218,6 +218,17 @@
       </div>
     </div>
 
+    <div class="row-2">
+      <div class="field">
+        <label for="breakHourInput">Hour Break</label>
+        <input type="text" inputmode="decimal" id="breakHourInput" class="mono" value="0">
+      </div>
+      <div class="field">
+        <label for="breakMinsInput">Minutes Break</label>
+        <input type="text" inputmode="decimal" id="breakMinsInput" class="mono" value="0">
+      </div>
+    </div>
+
     <div class="field">
       <label for="targetRate">Task / Per Hour Rate</label>
       <input type="text" inputmode="decimal" id="targetRate" class="mono" value="14">
@@ -245,7 +256,11 @@
       <hr class="result-divider">
 
       <div class="result-mini">
-        <span>Total time worked</span>
+        <span>Break time</span>
+        <span id="breakTimeOut">--</span>
+      </div>
+      <div class="result-mini">
+        <span>Total time worked (net)</span>
         <span id="totalTimeOut">--</span>
       </div>
       <div class="result-mini">
@@ -345,13 +360,15 @@
 
   // ---------- TAB 2: Peer Review + Full Triage ----------
   function recalcReview() {
-    ['peerReview', 'adhocTask', 'fullTriage', 'hourInput', 'minsInput', 'targetRate'].forEach(id => $(id).classList.remove('error'));
+    ['peerReview', 'adhocTask', 'fullTriage', 'hourInput', 'minsInput', 'breakHourInput', 'breakMinsInput', 'targetRate'].forEach(id => $(id).classList.remove('error'));
 
     const peerReview = parseNum($('peerReview').value, true);
     const adhocTask = parseNum($('adhocTask').value, true);
     const fullTriage = parseNum($('fullTriage').value, true);
     const hourVal = parseNum($('hourInput').value, true);
     const minsVal = parseNum($('minsInput').value, true);
+    const breakHourVal = parseNum($('breakHourInput').value, true);
+    const breakMinsVal = parseNum($('breakMinsInput').value, true);
     const targetRate = parseNum($('targetRate').value);
 
     let errMsg = '';
@@ -360,16 +377,25 @@
     if (fullTriage === null) { $('fullTriage').classList.add('error'); errMsg = errMsg || 'Enter full triage tasks (0 or more).'; }
     if (hourVal === null) { $('hourInput').classList.add('error'); errMsg = errMsg || 'Enter hours worked (0 or more).'; }
     if (minsVal === null) { $('minsInput').classList.add('error'); errMsg = errMsg || 'Enter minutes worked (0 or more).'; }
+    if (breakHourVal === null) { $('breakHourInput').classList.add('error'); errMsg = errMsg || 'Enter break hours (0 or more).'; }
+    if (breakMinsVal === null) { $('breakMinsInput').classList.add('error'); errMsg = errMsg || 'Enter break minutes (0 or more).'; }
     if (targetRate === null) { $('targetRate').classList.add('error'); errMsg = errMsg || 'Enter a task/hour rate greater than 0.'; }
 
     const totalTasks = (peerReview || 0) + (adhocTask || 0) + (fullTriage || 0);
-    const totalTimeHours = (hourVal || 0) + (minsVal || 0) / 60;
+    const grossTimeHours = (hourVal || 0) + (minsVal || 0) / 60;
+    const breakTimeHours = (breakHourVal || 0) + (breakMinsVal || 0) / 60;
+    const totalTimeHours = grossTimeHours - breakTimeHours;
 
     if (!errMsg && totalTasks <= 0) {
       errMsg = 'Enter at least one peer review, adhoc, or full triage task.';
     }
+    if (!errMsg && breakTimeHours > grossTimeHours) {
+      $('breakHourInput').classList.add('error');
+      $('breakMinsInput').classList.add('error');
+      errMsg = 'Break time can\'t be more than hours/minutes worked.';
+    }
     if (!errMsg && totalTimeHours <= 0) {
-      errMsg = 'Enter hours/minutes worked greater than 0.';
+      errMsg = 'Enter hours/minutes worked greater than your break time.';
     }
 
     if (errMsg) {
@@ -380,6 +406,7 @@
       $('adhocTimeExact').textContent = '--';
       $('triageTimeFriendly').textContent = '--';
       $('triageTimeExact').textContent = '--';
+      $('breakTimeOut').textContent = '--';
       $('totalTimeOut').textContent = '--';
       $('achievedRateOut').textContent = '--';
       $('rateUsedOut').textContent = '--';
@@ -388,8 +415,8 @@
 
     $('errorMsgReview').textContent = '';
 
-    // Split the total worked time between the task types,
-    // proportional to how many of each you did.
+    // Split the net worked time (after subtracting breaks) between
+    // the task types, proportional to how many of each you did.
     const reviewShare = peerReview / totalTasks;
     const adhocShare = adhocTask / totalTasks;
     const triageShare = fullTriage / totalTasks;
@@ -408,12 +435,13 @@
     $('triageTimeFriendly').textContent = friendlyHours(triageHours);
     $('triageTimeExact').textContent = triageHours.toFixed(2) + 'h (' + (triageHours * 60).toFixed(1) + ' min) for ' + fullTriage + ' task(s)';
 
+    $('breakTimeOut').textContent = breakTimeHours > 0 ? friendlyHours(breakTimeHours) : '0m';
     $('totalTimeOut').textContent = friendlyHours(totalTimeHours) + ' (' + totalTasks + ' tasks)';
     $('achievedRateOut').textContent = achievedRate.toFixed(2) + ' /hr';
     $('rateUsedOut').textContent = targetRate + ' /hr';
   }
 
-  ['peerReview', 'adhocTask', 'fullTriage', 'hourInput', 'minsInput', 'targetRate'].forEach(id => {
+  ['peerReview', 'adhocTask', 'fullTriage', 'hourInput', 'minsInput', 'breakHourInput', 'breakMinsInput', 'targetRate'].forEach(id => {
     $(id).addEventListener('input', recalcReview);
   });
 
