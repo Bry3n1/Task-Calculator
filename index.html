@@ -1,505 +1,3656 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Task Time Calculator</title>
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Calculate recommended task time for Full Triage, Adhoc Task, and Peer Review around meetings, training, and breaks.">
+  <meta name="theme-color" content="#f3f5f1">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230c5142'/%3E%3Ccircle cx='32' cy='32' r='17' fill='none' stroke='%23fff' stroke-width='4'/%3E%3Cpath d='M32 22v11l7 4.5' fill='none' stroke='%23fff' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <title>Task Time Calculator</title>
+  <style>
+    :root {
+      --bg: #f3f5f1;
+      --surface: #ffffff;
+      --surface-soft: #f8faf7;
+      --ink: #18231e;
+      --ink-soft: #34423a;
+      --muted: #5d6a62;
+      --muted-strong: #46554c;
+      --line: #dfe5df;
+      --line-strong: #cbd5cd;
+      --accent: #146b57;
+      --accent-strong: #0c5142;
+      --accent-soft: #eaf4ef;
+      --accent-soft-2: #dceee5;
+      --success: #1f6a4b;
+      --warning: #855500;
+      --warning-ink: #6d4600;
+      --warning-bg: #fff8e7;
+      --warning-line: #ecd7a6;
+      --danger: #a52f2f;
+      --danger-bg: #fff3f2;
+      --danger-line: #efc9c6;
+      --info: #2b5f7c;
+      --info-bg: #eff6fa;
+      --info-line: #cde2ee;
+      --radius: 14px;
+      --radius-sm: 9px;
+      --shadow: 0 1px 2px rgba(19, 38, 29, 0.04), 0 8px 28px rgba(19, 38, 29, 0.035);
+      --focus-ring: 0 0 0 3px rgba(20, 107, 87, 0.22);
+      --font-sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
 
-  :root{
-    --bg: #05070c;
-    --panel: rgba(20,28,42,0.5);
-    --border: rgba(120,200,255,0.18);
-    --text: #eaf3fb;
-    --text-dim: #8fa3bd;
-    --cyan: #3ee6ff;
-    --red: #ff5c7a;
-  }
-  *{ box-sizing: border-box; }
-  body{
-    margin: 0;
-    min-height: 100vh;
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Space Grotesk', system-ui, sans-serif;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 24px;
-  }
-  .mono{ font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; }
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
 
-  .card{
-    width: 100%;
-    max-width: 380px;
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    backdrop-filter: blur(18px) saturate(140%);
-    padding: 28px 26px 26px;
-    box-shadow: 0 0 30px rgba(62,230,255,0.08);
-  }
-  h1{
-    font-size: 1.1rem;
-    margin: 0 0 18px;
-    letter-spacing: 0.02em;
-  }
+    html {
+      color-scheme: light;
+      -webkit-text-size-adjust: 100%;
+    }
 
-  /* Tabs */
-  .tabs{
-    display: flex;
-    gap: 6px;
-    margin-bottom: 20px;
-    background: rgba(0,0,0,0.2);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 4px;
-  }
-  .tab-btn{
-    flex: 1;
-    border: none;
-    background: transparent;
-    color: var(--text-dim);
-    font-family: 'Space Grotesk', system-ui, sans-serif;
-    font-size: 0.78rem;
-    font-weight: 600;
-    padding: 9px 6px;
-    border-radius: 9px;
-    cursor: pointer;
-    transition: background 0.15s ease, color 0.15s ease;
-  }
-  .tab-btn.active{
-    background: rgba(62,230,255,0.14);
-    color: var(--cyan);
-  }
-  .tab-panel{ display: none; }
-  .tab-panel.active{ display: block; }
+    body {
+      margin: 0;
+      min-width: 320px;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: var(--font-sans);
+      font-size: 15px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
 
-  .field{ margin-bottom: 16px; }
-  .field label{
-    display: block;
-    font-size: 0.75rem;
-    color: var(--text-dim);
-    margin-bottom: 6px;
-  }
-  .field input{
-    width: 100%;
-    padding: 12px 14px;
-    border-radius: 10px;
-    border: 1px solid var(--border);
-    background: rgba(0,0,0,0.2);
-    color: var(--text);
-    font-size: 1rem;
-    outline: none;
-    transition: border-color 0.15s ease, box-shadow 0.15s ease;
-  }
-  .field input:focus{
-    border-color: var(--cyan);
-    box-shadow: 0 0 0 3px rgba(62,230,255,0.18);
-  }
-  .field input.error{
-    border-color: var(--red);
-    box-shadow: 0 0 0 3px rgba(255,92,122,0.18);
-  }
+    button,
+    input,
+    select {
+      font: inherit;
+    }
 
-  .row-2{
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-  }
+    button {
+      cursor: pointer;
+    }
 
-  .error-msg{
-    color: var(--red);
-    font-size: 0.8rem;
-    margin: 2px 0 10px;
-    min-height: 1em;
-  }
+    button:disabled {
+      cursor: default;
+    }
 
-  .result{
-    margin-top: 8px;
-    padding: 18px;
-    border-radius: 14px;
-    background: rgba(0,0,0,0.18);
-    border: 1px solid var(--border);
-    text-align: center;
-  }
-  .result-label{
-    font-size: 0.72rem;
-    color: var(--text-dim);
-    margin-bottom: 6px;
-  }
-  .result-value{
-    font-size: 1.8rem;
-    font-weight: 700;
-    color: var(--cyan);
-  }
-  .result-sub{
-    font-size: 0.78rem;
-    color: var(--text-dim);
-    margin-top: 6px;
-  }
-  .result-divider{
-    height: 1px;
-    background: var(--border);
-    margin: 12px 0;
-    border: none;
-  }
-  .result-mini{
-    display: flex;
-    justify-content: space-between;
-    font-size: 0.78rem;
-    color: var(--text-dim);
-    margin-top: 6px;
-  }
-  .result-mini span:last-child{
-    color: var(--text);
-    font-family: 'JetBrains Mono', monospace;
-  }
-</style>
+    strong,
+    b {
+      font-weight: 650;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    p {
+      margin-top: 0;
+    }
+
+    a {
+      color: var(--accent);
+    }
+
+    :focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    .sr-only {
+      position: absolute !important;
+      width: 1px !important;
+      height: 1px !important;
+      padding: 0 !important;
+      margin: -1px !important;
+      overflow: hidden !important;
+      clip: rect(0, 0, 0, 0) !important;
+      white-space: nowrap !important;
+      border: 0 !important;
+    }
+
+    .skip-link {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      z-index: 100;
+      padding: 10px 14px;
+      border-radius: 8px;
+      background: var(--accent-strong);
+      color: #fff;
+      font-size: 0.82rem;
+      font-weight: 650;
+      transform: translateY(-160%);
+      transition: transform 120ms ease;
+    }
+
+    .skip-link:focus {
+      transform: translateY(0);
+    }
+
+    .app-shell {
+      width: 100%;
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 26px clamp(16px, 3vw, 34px) 32px;
+    }
+
+    .app-header {
+      display: grid;
+      grid-template-columns: minmax(0, 1.35fr) minmax(260px, 0.65fr);
+      align-items: end;
+      gap: 28px;
+      padding: 4px 0 22px;
+      border-bottom: 1px solid var(--line);
+      margin-bottom: 24px;
+    }
+
+    .brand-row {
+      display: flex;
+      align-items: center;
+      gap: 13px;
+      min-width: 0;
+    }
+
+    .brand-mark {
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+      width: 42px;
+      height: 42px;
+      border-radius: 11px;
+      background: var(--accent-strong);
+      color: #fff;
+      box-shadow: 0 2px 6px rgba(12, 81, 66, 0.18);
+    }
+
+    .brand-mark svg {
+      display: block;
+      width: 23px;
+      height: 23px;
+    }
+
+    .eyebrow {
+      margin: 0 0 3px;
+      color: var(--accent);
+      font-size: 0.68rem;
+      font-weight: 700;
+      line-height: 1.3;
+      letter-spacing: 0.105em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.55rem, 2.7vw, 2rem);
+      line-height: 1.14;
+      letter-spacing: -0.032em;
+      font-weight: 720;
+    }
+
+    .header-lede {
+      justify-self: end;
+      max-width: 38ch;
+      margin: 0 0 2px;
+      color: var(--muted);
+      font-size: 0.84rem;
+      line-height: 1.55;
+      text-align: right;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.48fr) minmax(354px, 0.92fr);
+      align-items: start;
+      gap: 22px;
+    }
+
+    .input-column {
+      min-width: 0;
+    }
+
+    .results-column {
+      min-width: 0;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 20px;
+    }
+
+    .card + .card {
+      margin-top: 15px;
+    }
+
+    .card-heading {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 15px;
+    }
+
+    .card-heading h2 {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 700;
+      line-height: 1.3;
+      letter-spacing: -0.012em;
+    }
+
+    .card-heading p {
+      margin: 3px 0 0;
+      color: var(--muted);
+      font-size: 0.78rem;
+      line-height: 1.45;
+    }
+
+    .card-heading > .card-tag,
+    .card-tag {
+      flex: 0 0 auto;
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
+      padding: 3px 8px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--surface-soft);
+      color: var(--muted-strong);
+      font-size: 0.7rem;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    .hint {
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: 0.75rem;
+      line-height: 1.45;
+    }
+
+    .notice {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      margin-bottom: 14px;
+      background: var(--surface-soft);
+      color: var(--ink-soft);
+      font-size: 0.78rem;
+      line-height: 1.45;
+    }
+
+    .notice-icon {
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+      width: 18px;
+      height: 18px;
+      margin-top: 1px;
+      border-radius: 50%;
+      background: currentColor;
+      color: #fff;
+      font-size: 0.69rem;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .notice strong {
+      display: block;
+      margin-bottom: 1px;
+      color: var(--ink);
+      font-size: 0.79rem;
+    }
+
+    .notice p {
+      margin: 0;
+    }
+
+    .notice--danger {
+      background: var(--danger-bg);
+      border-color: var(--danger-line);
+      color: var(--danger);
+    }
+
+    .notice--danger strong {
+      color: var(--danger);
+    }
+
+    .notice--warning {
+      background: var(--warning-bg);
+      border-color: var(--warning-line);
+      color: var(--warning-ink);
+    }
+
+    .notice--warning strong {
+      color: var(--warning-ink);
+    }
+
+    .notice--info {
+      background: var(--info-bg);
+      border-color: var(--info-line);
+      color: var(--info);
+    }
+
+    .notice--info strong {
+      color: var(--info);
+    }
+    .notice:last-child {
+      margin-bottom: 0;
+    }
+
+    .form-status {
+      margin-bottom: 15px;
+    }
+
+    .form-status p {
+      margin: 0;
+    }
+
+    .field-grid {
+      display: grid;
+      gap: 12px;
+    }
+
+    .field-grid--two {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .field {
+      min-width: 0;
+    }
+
+    .field > label,
+    .mini-label {
+      display: block;
+      margin-bottom: 5px;
+      color: var(--ink-soft);
+      font-size: 0.72rem;
+      font-weight: 650;
+      line-height: 1.35;
+    }
+
+    .field input,
+    .field select,
+    .mini-field input {
+      width: 100%;
+      min-height: 39px;
+      border: 1px solid var(--line-strong);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--ink);
+      padding: 8px 10px;
+      font-size: 0.88rem;
+      font-variant-numeric: tabular-nums;
+      transition: border-color 130ms ease, box-shadow 130ms ease;
+    }
+
+    .field input[type="time"] {
+      min-width: 0;
+    }
+
+    .field input:hover,
+    .field select:hover,
+    .mini-field input:hover {
+      border-color: #b7c4ba;
+    }
+
+    .field input:focus,
+    .field select:focus,
+    .mini-field input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: var(--focus-ring);
+    }
+
+    .field input[aria-invalid="true"],
+    .field select[aria-invalid="true"],
+    .mini-field input[aria-invalid="true"] {
+      border-color: var(--danger);
+      background: #fffafa;
+    }
+
+    .field input[aria-invalid="true"]:focus,
+    .field select[aria-invalid="true"]:focus,
+    .mini-field input[aria-invalid="true"]:focus {
+      box-shadow: 0 0 0 3px rgba(165, 47, 47, 0.16);
+    }
+
+    .field.has-error > label,
+    .mini-field.has-error .mini-label {
+      color: var(--danger);
+    }
+
+    .field-error {
+      margin: 5px 0 0;
+      color: var(--danger);
+      font-size: 0.72rem;
+      line-height: 1.4;
+    }
+
+    .field-error:empty {
+      display: none;
+    }
+
+    .field-error ul {
+      margin: 0;
+      padding-left: 15px;
+    }
+
+    .field-error li + li {
+      margin-top: 2px;
+    }
+
+    .input-affix {
+      position: relative;
+    }
+
+    .input-affix input {
+      padding-right: 31px;
+    }
+
+    .input-affix__suffix {
+      position: absolute;
+      top: 50%;
+      right: 10px;
+      transform: translateY(-50%);
+      color: var(--muted);
+      font-size: 0.69rem;
+      font-weight: 600;
+      pointer-events: none;
+    }
+
+    .task-table-head {
+      display: grid;
+      grid-template-columns: minmax(120px, 1.35fr) 76px 82px 156px;
+      gap: 9px;
+      padding: 0 0 6px;
+      border-bottom: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.045em;
+      text-transform: uppercase;
+    }
+
+    .task-table-head span:nth-child(n + 2) {
+      text-align: left;
+    }
+
+    .task-list {
+      display: grid;
+    }
+
+    .task-row {
+      display: grid;
+      grid-template-columns: minmax(120px, 1.35fr) 76px 82px 156px;
+      gap: 9px;
+      align-items: start;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .task-row:last-child {
+      border-bottom: 0;
+      padding-bottom: 4px;
+    }
+
+    .task-name {
+      display: block;
+      padding-top: 5px;
+      color: var(--ink);
+      font-size: 0.84rem;
+      font-weight: 700;
+      line-height: 1.35;
+    }
+
+    .task-meta {
+      margin: 3px 0 0;
+      color: var(--muted);
+      font-size: 0.68rem;
+      line-height: 1.4;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .task-meta strong {
+      color: var(--muted-strong);
+      font-weight: 650;
+    }
+
+    .mini-field {
+      min-width: 0;
+    }
+
+    .mini-field .mini-label {
+      color: var(--muted);
+      font-size: 0.66rem;
+      font-weight: 650;
+      letter-spacing: 0.01em;
+    }
+
+    .mini-field input {
+      min-height: 36px;
+      padding: 6px 8px;
+      font-size: 0.82rem;
+    }
+
+    .override-control {
+      display: flex;
+      gap: 5px;
+      align-items: stretch;
+    }
+
+    .override-control input {
+      min-width: 0;
+      flex: 1 1 auto;
+    }
+
+    .clear-link {
+      flex: 0 0 auto;
+      min-height: 24px;
+      border: 0;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--accent);
+      padding: 2px 6px;
+      font-size: 0.68rem;
+      font-weight: 650;
+    }
+
+    .clear-link:hover:not(:disabled) {
+      background: var(--accent-soft);
+    }
+
+    .clear-link:disabled {
+      color: #aeb8b1;
+    }
+
+    .task-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 13px;
+      padding-top: 12px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 0.72rem;
+    }
+
+    .task-footer strong {
+      color: var(--ink-soft);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .method-fieldset {
+      min-width: 0;
+      margin: 0;
+      padding: 0;
+      border: 0;
+    }
+
+    .method-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .method-option {
+      position: relative;
+      display: block;
+      min-width: 0;
+    }
+
+    .method-option input {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .method-body {
+      display: block;
+      height: 100%;
+      padding: 10px 11px;
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius-sm);
+      background: #fff;
+      cursor: pointer;
+      transition: border-color 130ms ease, background-color 130ms ease, box-shadow 130ms ease;
+    }
+
+    .method-body:hover {
+      border-color: #aebdb1;
+    }
+
+    .method-option input:checked + .method-body {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+      box-shadow: inset 0 0 0 1px var(--accent);
+    }
+
+    .method-option input:focus-visible + .method-body {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+      box-shadow: var(--focus-ring);
+    }
+
+    .method-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .method-name {
+      color: var(--ink);
+      font-size: 0.81rem;
+      font-weight: 700;
+      line-height: 1.35;
+    }
+
+    .method-dot {
+      display: block;
+      flex: 0 0 auto;
+      width: 13px;
+      height: 13px;
+      border: 1.5px solid #b3c0b5;
+      border-radius: 50%;
+      background: #fff;
+    }
+
+    .method-option input:checked + .method-body .method-dot {
+      border: 4px solid var(--accent);
+    }
+
+    .method-desc {
+      display: block;
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 0.69rem;
+      line-height: 1.4;
+    }
+
+    .method-note {
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: 0.72rem;
+      line-height: 1.45;
+    }
+
+    .inline-note {
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+      margin: 0 0 15px;
+      padding: 9px 11px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      background: var(--surface-soft);
+      color: var(--muted-strong);
+      font-size: 0.74rem;
+      line-height: 1.45;
+    }
+
+    .inline-note__mark {
+      display: inline-grid;
+      place-items: center;
+      flex: 0 0 auto;
+      width: 15px;
+      height: 15px;
+      margin-top: 1px;
+      border: 1px solid var(--line-strong);
+      border-radius: 50%;
+      color: var(--muted);
+      font-size: 0.62rem;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .activity-group + .activity-group {
+      margin-top: 16px;
+      padding-top: 15px;
+      border-top: 1px solid var(--line);
+    }
+
+    .activity-group-heading {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .activity-group-heading h3 {
+      margin: 0;
+      color: var(--ink);
+      font-size: 0.84rem;
+      font-weight: 700;
+      line-height: 1.35;
+    }
+
+    .activity-group-note {
+      margin: 2px 0 0;
+      color: var(--muted);
+      font-size: 0.7rem;
+      line-height: 1.4;
+    }
+
+    .add-button {
+      flex: 0 0 auto;
+      min-height: 30px;
+      border: 1px solid var(--line-strong);
+      border-radius: 7px;
+      background: #fff;
+      color: var(--accent);
+      padding: 4px 9px;
+      font-size: 0.71rem;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+
+    .add-button:hover {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    .activity-list {
+      display: grid;
+      gap: 8px;
+      margin-top: 9px;
+    }
+
+    .activity-empty {
+      margin: 0;
+      padding: 3px 0;
+      color: var(--muted);
+      font-size: 0.73rem;
+      line-height: 1.4;
+    }
+
+    .activity-entry {
+      min-width: 0;
+      padding: 9px 10px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      background: var(--surface-soft);
+    }
+
+    .activity-entry.has-error {
+      border-color: var(--danger-line);
+      background: #fffbfb;
+    }
+
+    .activity-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .activity-title-line {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      min-width: 0;
+    }
+
+    .activity-name {
+      color: var(--ink-soft);
+      font-size: 0.75rem;
+      font-weight: 700;
+      line-height: 1.35;
+    }
+
+    .activity-duration {
+      display: inline-flex;
+      align-items: center;
+      min-height: 21px;
+      padding: 1px 6px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #fff;
+      color: var(--muted-strong);
+      font-size: 0.65rem;
+      font-weight: 700;
+      line-height: 1.3;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    .remove-button {
+      flex: 0 0 auto;
+      min-height: 24px;
+      border: 0;
+      border-radius: 5px;
+      background: transparent;
+      color: var(--muted);
+      padding: 3px 6px;
+      font-size: 0.68rem;
+      font-weight: 600;
+      line-height: 1.3;
+    }
+
+    .remove-button:hover {
+      background: var(--danger-bg);
+      color: var(--danger);
+    }
+
+    .activity-controls {
+      display: grid;
+      grid-template-columns: 128px minmax(0, 1fr);
+      gap: 8px;
+      align-items: end;
+      margin-top: 7px;
+    }
+
+    .activity-controls select {
+      width: 100%;
+      min-height: 33px;
+      padding: 5px 7px;
+      border: 1px solid var(--line-strong);
+      border-radius: 7px;
+      background: #fff;
+      color: var(--ink-soft);
+      font-size: 0.72rem;
+    }
+
+    .activity-controls select:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: var(--focus-ring);
+    }
+
+    .mode-panel {
+      display: flex;
+      align-items: flex-end;
+      gap: 7px;
+      min-width: 0;
+    }
+
+    .mode-panel .mini-field {
+      flex: 1 1 0;
+    }
+
+    .mode-panel .mini-label {
+      color: var(--muted);
+      font-size: 0.62rem;
+    }
+
+    .activity-controls .mini-field input {
+      min-height: 33px;
+      padding: 5px 7px;
+      font-size: 0.75rem;
+    }
+
+    .time-separator {
+      padding-bottom: 8px;
+      color: var(--muted);
+      font-size: 0.68rem;
+    }
+
+    .activity-error {
+      margin-top: 6px;
+    }
+
+    .activity-general-error {
+      margin: 10px 0 0;
+    }
+
+    .break-toggle-wrap {
+      margin-top: 16px;
+      padding-top: 15px;
+      border-top: 1px solid var(--line);
+    }
+
+    .break-toggle {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      cursor: pointer;
+    }
+
+    .break-toggle input {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+    }
+
+    .switch-track {
+      position: relative;
+      flex: 0 0 auto;
+      width: 36px;
+      height: 21px;
+      margin-top: 1px;
+      border: 1px solid #b9c6bb;
+      border-radius: 999px;
+      background: #e8ede8;
+      transition: background-color 140ms ease, border-color 140ms ease;
+    }
+
+    .switch-track::after {
+      content: "";
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 1px 2px rgba(19, 38, 29, 0.2);
+      transition: transform 140ms ease;
+    }
+
+    .break-toggle input:checked + .switch-track {
+      border-color: var(--accent);
+      background: var(--accent);
+    }
+
+    .break-toggle input:checked + .switch-track::after {
+      transform: translateX(15px);
+    }
+
+    .break-toggle input:focus-visible + .switch-track {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+      box-shadow: var(--focus-ring);
+    }
+
+    .break-toggle-text {
+      min-width: 0;
+    }
+
+    .break-toggle-text strong {
+      display: block;
+      color: var(--ink-soft);
+      font-size: 0.76rem;
+      font-weight: 650;
+      line-height: 1.4;
+    }
+
+    .break-toggle-text span {
+      display: block;
+      margin-top: 1px;
+      color: var(--muted);
+      font-size: 0.69rem;
+      line-height: 1.4;
+    }
+
+    .action-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 14px 2px 0;
+    }
+
+    .reset-button {
+      min-height: 36px;
+      border: 1px solid var(--line-strong);
+      border-radius: 8px;
+      background: transparent;
+      color: var(--muted-strong);
+      padding: 7px 12px;
+      font-size: 0.76rem;
+      font-weight: 650;
+    }
+
+    .reset-button:hover {
+      border-color: #b0bdb2;
+      background: rgba(255, 255, 255, 0.65);
+    }
+
+    .privacy-note {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.7rem;
+      line-height: 1.4;
+      text-align: right;
+    }
+    .results-panel {
+      position: sticky;
+      top: 18px;
+      max-height: calc(100vh - 36px);
+      overflow: auto;
+      padding: 0;
+      scrollbar-width: thin;
+      scrollbar-color: #cbd5cd transparent;
+    }
+
+    .results-panel.is-stale {
+      border-color: var(--danger-line);
+    }
+
+    .results-inner {
+      padding: 20px;
+    }
+
+    .results-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 4px;
+    }
+
+    .results-header h2 {
+      margin: 0;
+      font-size: 1.02rem;
+      font-weight: 700;
+      line-height: 1.3;
+      letter-spacing: -0.012em;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      flex: 0 0 auto;
+      min-height: 24px;
+      padding: 3px 8px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--surface-soft);
+      color: var(--muted-strong);
+      font-size: 0.64rem;
+      font-weight: 750;
+      letter-spacing: 0.035em;
+      line-height: 1.2;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    .status-badge--success {
+      border-color: #c3dfd1;
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+
+    .status-badge--warning {
+      border-color: var(--warning-line);
+      background: var(--warning-bg);
+      color: var(--warning-ink);
+    }
+
+    .status-badge--danger {
+      border-color: var(--danger-line);
+      background: var(--danger-bg);
+      color: var(--danger);
+    }
+
+    .status-badge--neutral {
+      color: var(--muted-strong);
+    }
+
+    .status-copy {
+      margin: 0 0 13px;
+      color: var(--muted);
+      font-size: 0.72rem;
+      line-height: 1.45;
+    }
+
+    .results-inner .notice {
+      margin-bottom: 12px;
+      font-size: 0.75rem;
+    }
+
+    .budget-hero {
+      margin-top: 13px;
+      padding: 14px;
+      border: 1px solid #cfe4d9;
+      border-radius: 10px;
+      background: var(--accent-soft);
+    }
+
+    .budget-label {
+      display: block;
+      margin-bottom: 1px;
+      color: var(--accent-strong);
+      font-size: 0.67rem;
+      font-weight: 750;
+      letter-spacing: 0.055em;
+      line-height: 1.3;
+      text-transform: uppercase;
+    }
+
+    .budget-main {
+      display: flex;
+      align-items: baseline;
+      gap: 7px;
+      min-width: 0;
+    }
+
+    .budget-value {
+      color: var(--accent-strong);
+      font-size: 2rem;
+      font-weight: 740;
+      letter-spacing: -0.045em;
+      line-height: 1.15;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .budget-of {
+      color: #4a6b5c;
+      font-size: 0.76rem;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .budget-sub {
+      margin: 2px 0 0;
+      color: #4a6b5c;
+      font-size: 0.69rem;
+      line-height: 1.4;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .budget-sub + .budget-sub {
+      margin-top: 1px;
+    }
+
+    .budget-sub strong {
+      color: var(--accent-strong);
+      font-weight: 700;
+    }
+
+    .activity-facts {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      margin-top: 9px;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      overflow: hidden;
+      background: #fff;
+    }
+
+    .fact {
+      min-width: 0;
+      padding: 8px 9px;
+    }
+
+    .fact + .fact {
+      border-left: 1px solid var(--line);
+    }
+
+    .fact span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.64rem;
+      line-height: 1.3;
+    }
+
+    .fact strong {
+      display: block;
+      margin-top: 1px;
+      color: var(--ink-soft);
+      font-size: 0.82rem;
+      line-height: 1.3;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .result-section {
+      margin-top: 17px;
+    }
+
+    .section-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 7px;
+    }
+
+    .section-top h3 {
+      margin: 0;
+      color: var(--ink);
+      font-size: 0.82rem;
+      font-weight: 700;
+      line-height: 1.35;
+    }
+
+    .method-pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 20px;
+      padding: 2px 7px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--surface-soft);
+      color: var(--muted);
+      font-size: 0.62rem;
+      font-weight: 650;
+      line-height: 1.2;
+      white-space: nowrap;
+    }
+
+    .empty-message {
+      margin: 0 0 10px;
+      padding: 10px 11px;
+      border: 1px dashed var(--line-strong);
+      border-radius: 8px;
+      background: var(--surface-soft);
+      color: var(--muted);
+      font-size: 0.73rem;
+      line-height: 1.45;
+    }
+
+    .rec-list {
+      margin: 0;
+      padding: 0;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      list-style: none;
+      overflow: hidden;
+    }
+
+    .rec-item {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 9px 11px;
+      background: #fff;
+    }
+
+    .rec-item + .rec-item {
+      border-top: 1px solid var(--line);
+    }
+
+    .rec-info {
+      min-width: 0;
+    }
+
+    .rec-name {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 5px;
+      color: var(--ink-soft);
+      font-size: 0.77rem;
+      font-weight: 650;
+      line-height: 1.35;
+    }
+
+    .rec-sub {
+      display: block;
+      margin-top: 1px;
+      color: var(--muted);
+      font-size: 0.66rem;
+      line-height: 1.35;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .mini-badge {
+      display: inline-flex;
+      align-items: center;
+      min-height: 17px;
+      padding: 1px 5px;
+      border-radius: 4px;
+      background: var(--info-bg);
+      color: var(--info);
+      font-size: 0.58rem;
+      font-weight: 750;
+      letter-spacing: 0.03em;
+      line-height: 1.2;
+      text-transform: uppercase;
+    }
+
+    .mini-badge--fit {
+      background: var(--warning-bg);
+      color: var(--warning-ink);
+    }
+
+    .rec-value {
+      flex: 0 0 auto;
+      color: var(--ink);
+      font-size: 0.91rem;
+      font-weight: 700;
+      line-height: 1.35;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    .rec-reference,
+    .rec-total {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .rec-reference {
+      padding: 7px 2px 0;
+      color: var(--muted);
+      font-size: 0.68rem;
+    }
+
+    .rec-reference strong {
+      color: var(--muted-strong);
+      font-weight: 650;
+    }
+
+    .rec-total {
+      margin-top: 7px;
+      padding: 9px 11px;
+      border-top: 1px solid var(--line);
+      color: var(--ink-soft);
+      font-size: 0.77rem;
+      font-weight: 650;
+    }
+
+    .rec-total strong {
+      color: var(--ink);
+      font-size: 0.91rem;
+      font-weight: 720;
+      white-space: nowrap;
+    }
+
+    .final-block {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin-top: 13px;
+      padding: 12px 13px;
+      border-radius: 10px;
+      background: #172a22;
+      color: #fff;
+    }
+
+    .final-copy {
+      min-width: 0;
+    }
+
+    .final-copy span {
+      display: block;
+      color: rgba(255, 255, 255, 0.78);
+      font-size: 0.67rem;
+      font-weight: 650;
+      line-height: 1.35;
+      letter-spacing: 0.025em;
+      text-transform: uppercase;
+    }
+
+    .final-copy small {
+      display: block;
+      margin-top: 2px;
+      color: rgba(255, 255, 255, 0.62);
+      font-size: 0.65rem;
+      line-height: 1.4;
+    }
+
+    .final-value {
+      flex: 0 0 auto;
+      color: #fff;
+      font-size: 1.42rem;
+      font-weight: 730;
+      letter-spacing: -0.03em;
+      line-height: 1.2;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    .break-log-note {
+      margin: 7px 0 0;
+      color: var(--muted);
+      font-size: 0.67rem;
+      line-height: 1.4;
+    }
+
+    .budget-balance {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 8px;
+      padding: 8px 10px;
+      border: 1px dashed var(--line-strong);
+      border-radius: 8px;
+      background: var(--surface-soft);
+      color: var(--muted-strong);
+      font-size: 0.7rem;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .budget-balance strong {
+      color: var(--ink-soft);
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .budget-balance.is-over {
+      border-color: var(--danger-line);
+      background: var(--danger-bg);
+      color: var(--danger);
+    }
+
+    .budget-balance.is-over strong {
+      color: var(--danger);
+    }
+
+    .result-note {
+      margin-top: 10px;
+      margin-bottom: 0;
+    }
+
+    .result-note p {
+      margin: 0;
+    }
+
+    .calc-details {
+      margin-top: 16px;
+      padding-top: 1px;
+      border-top: 1px solid var(--line);
+    }
+
+    .calc-details summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 0 2px;
+      color: var(--accent);
+      font-size: 0.76rem;
+      font-weight: 700;
+      line-height: 1.4;
+      list-style: none;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .calc-details summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .calc-details summary::after {
+      content: "+";
+      flex: 0 0 auto;
+      display: inline-grid;
+      place-items: center;
+      width: 18px;
+      height: 18px;
+      border: 1px solid var(--line-strong);
+      border-radius: 5px;
+      background: var(--surface-soft);
+      color: var(--muted-strong);
+      font-size: 0.82rem;
+      font-weight: 600;
+      line-height: 1;
+    }
+
+    .calc-details[open] summary::after {
+      content: "−";
+    }
+
+    .details-content {
+      padding-top: 9px;
+      color: var(--ink-soft);
+      font-size: 0.73rem;
+      line-height: 1.5;
+    }
+
+    .details-section + .details-section {
+      margin-top: 15px;
+      padding-top: 13px;
+      border-top: 1px solid var(--line);
+    }
+
+    .details-section h4 {
+      margin: 0 0 7px;
+      color: var(--muted);
+      font-size: 0.63rem;
+      font-weight: 750;
+      letter-spacing: 0.06em;
+      line-height: 1.3;
+      text-transform: uppercase;
+    }
+
+    .formula-list {
+      margin: 0;
+    }
+
+    .formula-list > div {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 3px 0;
+    }
+
+    .formula-list dt {
+      color: var(--muted-strong);
+      min-width: 0;
+    }
+
+    .formula-list dt span {
+      color: var(--muted);
+      font-size: 0.67rem;
+    }
+
+    .formula-list dd {
+      margin: 0;
+      color: var(--ink-soft);
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    .formula-list .formula-total {
+      margin-top: 4px;
+      padding-top: 7px;
+      border-top: 1px solid var(--line);
+    }
+
+    .formula-list .formula-total dt,
+    .formula-list .formula-total dd {
+      color: var(--ink);
+      font-weight: 700;
+    }
+
+    .table-wrap {
+      width: 100%;
+      overflow-x: auto;
+    }
+
+    .task-breakdown {
+      width: 100%;
+      min-width: 490px;
+      border-collapse: collapse;
+      font-size: 0.7rem;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .task-breakdown th {
+      padding: 0 5px 5px;
+      border-bottom: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 0.6rem;
+      font-weight: 700;
+      letter-spacing: 0.035em;
+      line-height: 1.3;
+      text-align: right;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .task-breakdown th:first-child {
+      padding-left: 0;
+      text-align: left;
+    }
+
+    .task-breakdown td {
+      padding: 6px 5px;
+      border-bottom: 1px solid #edf1ed;
+      text-align: right;
+      vertical-align: top;
+      white-space: nowrap;
+    }
+
+    .task-breakdown td:first-child {
+      padding-left: 0;
+      text-align: left;
+      white-space: normal;
+    }
+
+    .task-breakdown tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .task-breakdown .breakdown-name {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 4px;
+      color: var(--ink-soft);
+      font-weight: 650;
+    }
+
+    .difference-negative {
+      color: var(--warning-ink);
+      font-weight: 650;
+    }
+
+    .difference-positive {
+      color: var(--success);
+      font-weight: 650;
+    }
+
+    .details-note {
+      margin: 7px 0 0;
+      color: var(--muted);
+      font-size: 0.68rem;
+      line-height: 1.45;
+    }
+
+    .details-note strong {
+      color: var(--ink-soft);
+    }
+
+    .details-callout {
+      margin-top: 8px;
+      padding: 8px 9px;
+      border: 1px solid var(--warning-line);
+      border-radius: 7px;
+      background: var(--warning-bg);
+      color: var(--warning-ink);
+      font-size: 0.68rem;
+      line-height: 1.45;
+    }
+
+    .details-callout p {
+      margin: 0;
+    }
+
+    .details-callout p + p {
+      margin-top: 4px;
+    }
+
+    .details-formula {
+      margin: 6px 0 0;
+      padding: 7px 9px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: var(--surface-soft);
+      color: var(--muted-strong);
+      font-size: 0.68rem;
+      line-height: 1.5;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .results-footnote {
+      margin: 12px 0 0;
+      color: var(--muted);
+      font-size: 0.65rem;
+      line-height: 1.45;
+    }
+
+    .page-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-top: 24px;
+      padding-top: 14px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 0.68rem;
+      line-height: 1.4;
+    }
+
+    .page-footer p {
+      margin: 0;
+    }
+
+    .page-footer span {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .footer-dot {
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: var(--line-strong);
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+
+    @media (max-width: 1020px) {
+      .layout {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .results-panel {
+        position: static;
+        max-height: none;
+        overflow: visible;
+      }
+
+      .results-inner {
+        padding: 20px;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .app-shell {
+        padding-top: 18px;
+      }
+
+      .app-header {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 11px;
+        padding-bottom: 17px;
+        margin-bottom: 17px;
+      }
+
+      .header-lede {
+        justify-self: start;
+        max-width: 54ch;
+        font-size: 0.8rem;
+        text-align: left;
+      }
+
+      .brand-mark {
+        width: 38px;
+        height: 38px;
+        border-radius: 9px;
+      }
+
+      .brand-mark svg {
+        width: 21px;
+        height: 21px;
+      }
+
+      .card {
+        padding: 16px;
+      }
+
+      .card-heading {
+        gap: 10px;
+      }
+
+      .field-grid--two {
+        gap: 10px;
+      }
+
+      .field input,
+      .field select,
+      .mini-field input {
+        min-height: 42px;
+        font-size: 16px;
+      }
+
+      .mini-field input {
+        min-height: 40px;
+        font-size: 16px;
+      }
+
+      .task-table-head {
+        display: none;
+      }
+
+      .task-list {
+        gap: 8px;
+      }
+
+      .task-row {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 9px;
+        padding: 11px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface-soft);
+      }
+
+      .task-row:last-child {
+        padding-bottom: 11px;
+      }
+
+      .task-cell--name,
+      .task-cell--override {
+        grid-column: 1 / -1;
+      }
+
+      .task-name {
+        padding-top: 0;
+      }
+
+      .task-override .override-control {
+        max-width: 260px;
+      }
+
+      .activity-controls {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 7px;
+      }
+
+      .activity-controls select {
+        min-height: 38px;
+        font-size: 16px;
+      }
+
+      .activity-controls .mini-field input {
+        min-height: 38px;
+        font-size: 16px;
+      }
+
+      .method-body {
+        padding: 9px 10px;
+      }
+
+      .action-bar {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 9px;
+      }
+
+      .privacy-note {
+        text-align: left;
+      }
+
+      .results-panel {
+        border-radius: var(--radius);
+      }
+
+      .results-inner {
+        padding: 17px;
+      }
+
+      .page-footer {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 5px;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .app-shell {
+        padding-left: 12px;
+        padding-right: 12px;
+        padding-bottom: 22px;
+      }
+
+      .field-grid--two {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .method-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .budget-value {
+        font-size: 1.8rem;
+      }
+
+      .final-block {
+        gap: 9px;
+      }
+
+      .final-value {
+        font-size: 1.24rem;
+      }
+
+      .activity-group-heading {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .add-button {
+        width: 100%;
+        min-height: 34px;
+      }
+
+      .task-override .override-control {
+        max-width: none;
+      }
+
+      .section-top {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .method-pill {
+        align-self: flex-start;
+      }
+
+      .activity-facts {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .fact {
+        padding: 7px 7px;
+      }
+
+      .fact span {
+        font-size: 0.61rem;
+      }
+
+      .fact strong {
+        font-size: 0.78rem;
+      }
+
+      .results-header {
+        gap: 7px;
+      }
+
+      .status-badge {
+        padding: 3px 6px;
+        font-size: 0.59rem;
+      }
+
+      .notice {
+        padding: 9px 10px;
+      }
+
+      .task-breakdown {
+        min-width: 470px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+      }
+    }
+  </style>
 </head>
 <body>
+  <a class="skip-link" href="#main">Skip to calculator</a>
+  <div class="app-shell">
+    <header class="app-header">
+      <div class="brand-row">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="8.25"></circle>
+            <path d="M12 7.5V12l3.1 1.8"></path>
+          </svg>
+        </span>
+        <div>
+          <p class="eyebrow">Workday time estimate</p>
+          <h1>Task Time Calculator</h1>
+        </div>
+      </div>
+      <p class="header-lede">Turn task volume, meetings, training, and breaks into a clean recommendation for the time you log.</p>
+    </header>
 
-<div class="card">
-  <h1>Task Time Calculator</h1>
+    <main id="main" class="layout">
+      <form id="calculator" class="input-column" novalidate autocomplete="off">
+        <div id="form-status" class="notice notice--danger form-status" hidden>
+          <span class="notice-icon" aria-hidden="true">!</span>
+          <div>
+            <strong>Inputs need correction</strong>
+            <p><span id="form-error-count">Some values are invalid.</span> Results are paused at the last valid estimate until these are fixed.</p>
+          </div>
+        </div>
 
-  <div class="tabs">
-    <button class="tab-btn active" id="tabBtnSimple" type="button">Simple</button>
-    <button class="tab-btn" id="tabBtnReview" type="button">Peer Review + Triage</button>
-    <button class="tab-btn" id="tabBtnRate" type="button">Task Rate</button>
+        <section class="card" id="shift-card" aria-labelledby="shift-title">
+          <div class="card-heading">
+            <div>
+              <h2 id="shift-title">Shift</h2>
+              <p>Same-day shift for validation and display.</p>
+            </div>
+            <span class="card-tag" id="shift-duration-tag">9h</span>
+          </div>
+          <div class="field-grid field-grid--two">
+            <div class="field">
+              <label for="shift-start">Shift start</label>
+              <input type="text" id="shift-start" name="shift-start" value="08:00" data-time-input inputmode="numeric" maxlength="5" placeholder="HH:MM" autocomplete="off" spellcheck="false" aria-describedby="shift-hint err-shift-start">
+              <p class="field-error" id="err-shift-start" data-field-error="shift-start"></p>
+            </div>
+            <div class="field">
+              <label for="shift-end">Shift end</label>
+              <input type="text" id="shift-end" name="shift-end" value="17:00" data-time-input inputmode="numeric" maxlength="5" placeholder="HH:MM" autocomplete="off" spellcheck="false" aria-describedby="shift-hint err-shift-end">
+              <p class="field-error" id="err-shift-end" data-field-error="shift-end"></p>
+            </div>
+          </div>
+          <p class="hint" id="shift-hint">Use 24-hour HH:MM (for example, 08:30). End time must be later the same day; overnight shifts are not supported. The daily budget stays fixed at 8 working hours plus a 1-hour break.</p>
+        </section>
+
+        <section class="card" id="tasks-card" aria-labelledby="tasks-title">
+          <div class="card-heading">
+            <div>
+              <h2 id="tasks-title">Task categories</h2>
+              <p>Enter today's counts. Rates can be adjusted for each category.</p>
+            </div>
+            <span class="card-tag">Whole minutes</span>
+          </div>
+          <div class="task-table-head" aria-hidden="true">
+            <span>Category</span>
+            <span>Tasks</span>
+            <span>Rate / hr</span>
+            <span>Override (min)</span>
+          </div>
+          <div class="task-list" id="task-list"></div>
+          <div class="task-footer">
+            <span>Total original target time: <strong id="target-total">0m</strong></span>
+            <span>Recommended time is shown in the results panel.</span>
+          </div>
+        </section>
+
+        <section class="card" id="method-card" aria-labelledby="method-title">
+          <div class="card-heading">
+            <div>
+              <h2 id="method-title">Allocation method</h2>
+              <p>Choose how recommended task time is calculated.</p>
+            </div>
+          </div>
+          <fieldset class="method-fieldset">
+            <legend class="sr-only">Allocation method</legend>
+            <div class="method-grid">
+              <label class="method-option">
+                <input type="radio" name="allocation-method" id="method-target" value="target" checked>
+                <span class="method-body">
+                  <span class="method-top">
+                    <span class="method-name">Target Rate</span>
+                    <span class="method-dot" aria-hidden="true"></span>
+                  </span>
+                  <span class="method-desc">Use task counts ÷ target rate. Fit proportionally only when over budget.</span>
+                </span>
+              </label>
+              <label class="method-option">
+                <input type="radio" name="allocation-method" id="method-proportional" value="proportional">
+                <span class="method-body">
+                  <span class="method-top">
+                    <span class="method-name">Proportional Allocation</span>
+                    <span class="method-dot" aria-hidden="true"></span>
+                  </span>
+                  <span class="method-desc">Split available task time in proportion to each category's task count.</span>
+                </span>
+              </label>
+            </div>
+          </fieldset>
+          <p class="method-note">Manual overrides are fixed first. Remaining eligible categories share the remaining task-time budget with the selected method.</p>
+        </section>
+
+        <section class="card" id="activities-card" aria-labelledby="activities-title">
+          <div class="card-heading">
+            <div>
+              <h2 id="activities-title">Meetings, training &amp; breaks</h2>
+              <p>Add as many entries as you need.</p>
+            </div>
+            <span class="card-tag">Optional</span>
+          </div>
+
+          <div class="inline-note" id="activities-hint">
+            <span class="inline-note__mark" aria-hidden="true">i</span>
+            <span>Meetings and training reduce the fixed 8-hour working budget. Breaks are checked against the fixed 1-hour allowance. Overlaps can only be checked when start and end times are entered.</span>
+          </div>
+
+          <div class="activity-group" data-activity-group="meeting">
+            <div class="activity-group-heading">
+              <div>
+                <h3>Meetings</h3>
+                <p class="activity-group-note">Duration only, or timed for overlap checks.</p>
+              </div>
+              <button type="button" class="add-button" data-add-activity="meeting" aria-label="Add meeting">+ Add meeting</button>
+            </div>
+            <div class="activity-list" id="meeting-list"></div>
+          </div>
+
+          <div class="activity-group" data-activity-group="training">
+            <div class="activity-group-heading">
+              <div>
+                <h3>Training</h3>
+                <p class="activity-group-note">Duration only, or timed for overlap checks.</p>
+              </div>
+              <button type="button" class="add-button" data-add-activity="training" aria-label="Add training">+ Add training</button>
+            </div>
+            <div class="activity-list" id="training-list"></div>
+          </div>
+
+          <div class="activity-group" data-activity-group="break">
+            <div class="activity-group-heading">
+              <div>
+                <h3>Breaks</h3>
+                <p class="activity-group-note">Fixed 1-hour daily allowance; entries must not exceed it.</p>
+              </div>
+              <button type="button" class="add-button" data-add-activity="break" aria-label="Add break">+ Add break</button>
+            </div>
+            <div class="activity-list" id="break-list"></div>
+          </div>
+
+          <p class="field-error activity-general-error" id="activity-general-error" hidden></p>
+
+          <div class="break-toggle-wrap">
+            <label class="break-toggle" for="include-breaks">
+              <input type="checkbox" id="include-breaks" checked aria-describedby="break-switch-help">
+              <span class="switch-track" aria-hidden="true"></span>
+              <span class="break-toggle-text">
+                <strong>Include breaks in final logged-time total</strong>
+                <span id="break-switch-help">Breaks never reduce the fixed 8-hour working budget. This switch only includes or excludes the fixed 1-hour break in the final logged total.</span>
+              </span>
+            </label>
+          </div>
+        </section>
+
+        <div class="action-bar">
+          <button type="button" class="reset-button" id="reset-button">Reset calculator</button>
+          <p class="privacy-note">Calculations live only on this page. Nothing is saved.</p>
+        </div>
+      </form>
+
+      <aside class="results-column" aria-label="Calculation results">
+        <section class="card results-panel" id="results-panel" aria-labelledby="results-title">
+          <div class="results-inner" id="results-content"></div>
+        </section>
+      </aside>
+    </main>
+
+    <footer class="page-footer">
+      <p>Whole-minute estimates using a fixed 8-hour working budget plus a 1-hour break allowance.</p>
+      <p><span>Built for transparent time logging</span><span class="footer-dot" aria-hidden="true"></span><span>No account, database, or history</span></p>
+    </footer>
   </div>
+  <div id="live-region" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+  <script>
+    (() => {
+      'use strict';
 
-  <!-- TAB 1: original simple calculator -->
-  <div class="tab-panel active" id="tabSimple">
-    <div class="field">
-      <label for="target">Target Tasks per Hour</label>
-      <input type="text" inputmode="decimal" id="target" class="mono" value="14">
-    </div>
+      const CATEGORIES = [
+        { id: 'triage', name: 'Full Triage', defaultRate: 9 },
+        { id: 'adhoc', name: 'Adhoc Task', defaultRate: 10 },
+        { id: 'peer', name: 'Peer Review', defaultRate: 10 }
+      ];
 
-    <div class="field">
-      <label for="tasks">Tasks Completed</label>
-      <input type="text" inputmode="decimal" id="tasks" class="mono" value="20">
-    </div>
+      const ACTIVITY_TYPES = {
+        meeting: { singular: 'Meeting', plural: 'Meetings', defaultDuration: 30 },
+        training: { singular: 'Training', plural: 'Training', defaultDuration: 60 },
+        break: { singular: 'Break', plural: 'Breaks', defaultDuration: 15 }
+      };
 
-    <div class="error-msg" id="errorMsg"></div>
+      const METHOD_LABELS = {
+        target: 'Target Rate',
+        proportional: 'Proportional Allocation'
+      };
 
-    <div class="result">
-      <div class="result-label">Time Taken</div>
-      <div class="result-value mono" id="friendlyTime">--</div>
-      <div class="result-sub mono" id="exactTime">--</div>
-    </div>
-  </div>
+      const DAILY_REQUIREMENT_MINUTES = 9 * 60;
+      const WORKING_BUDGET_MINUTES = 8 * 60;
+      const BREAK_ALLOWANCE_MINUTES = 60;
 
-  <!-- TAB 2: peer review + full triage calculator -->
-  <div class="tab-panel" id="tabReview">
-    <div class="field">
-      <label for="peerReview">Peer Review Tasks</label>
-      <input type="text" inputmode="decimal" id="peerReview" class="mono" value="8">
-    </div>
+      const DEFAULTS = Object.freeze({
+        shiftStart: '08:00',
+        shiftEnd: '17:00',
+        method: 'target',
+        includeBreaks: true
+      });
 
-    <div class="field">
-      <label for="adhocTask">Adhoc Task</label>
-      <input type="text" inputmode="decimal" id="adhocTask" class="mono" value="0">
-    </div>
+      const form = document.getElementById('calculator');
+      const els = {
+        shiftStart: document.getElementById('shift-start'),
+        shiftEnd: document.getElementById('shift-end'),
+        shiftDurationTag: document.getElementById('shift-duration-tag'),
+        taskList: document.getElementById('task-list'),
+        targetTotal: document.getElementById('target-total'),
+        includeBreaks: document.getElementById('include-breaks'),
+        resetButton: document.getElementById('reset-button'),
+        formStatus: document.getElementById('form-status'),
+        formErrorCount: document.getElementById('form-error-count'),
+        activityGeneralError: document.getElementById('activity-general-error'),
+        resultsPanel: document.getElementById('results-panel'),
+        resultsContent: document.getElementById('results-content'),
+        liveRegion: document.getElementById('live-region')
+      };
 
-    <div class="field">
-      <label for="fullTriage">Full Triage Tasks</label>
-      <input type="text" inputmode="decimal" id="fullTriage" class="mono" value="6">
-    </div>
+      let state = createDefaultState();
+      let lastValid = null;
+      let activityCounter = 0;
+      let lastAnnouncement = '';
+      let previousValidity = null;
 
-    <div class="row-2">
-      <div class="field">
-        <label for="hourInput">Hours Worked</label>
-        <input type="text" inputmode="decimal" id="hourInput" class="mono" value="1">
-      </div>
-      <div class="field">
-        <label for="minsInput">Minutes Worked</label>
-        <input type="text" inputmode="decimal" id="minsInput" class="mono" value="30">
-      </div>
-    </div>
+      function createDefaultState() {
+        const categories = {};
+        CATEGORIES.forEach((category) => {
+          categories[category.id] = {
+            count: '0',
+            rate: String(category.defaultRate),
+            override: ''
+          };
+        });
 
-    <div class="row-2">
-      <div class="field">
-        <label for="breakHourInput">Hour Break</label>
-        <input type="text" inputmode="decimal" id="breakHourInput" class="mono" value="0">
-      </div>
-      <div class="field">
-        <label for="breakMinsInput">Minutes Break</label>
-        <input type="text" inputmode="decimal" id="breakMinsInput" class="mono" value="0">
-      </div>
-    </div>
+        return {
+          shiftStart: DEFAULTS.shiftStart,
+          shiftEnd: DEFAULTS.shiftEnd,
+          categories,
+          method: DEFAULTS.method,
+          includeBreaks: DEFAULTS.includeBreaks,
+          activities: []
+        };
+      }
 
-    <div class="field">
-      <label for="targetRate">Task / Per Hour Rate</label>
-      <input type="text" inputmode="decimal" id="targetRate" class="mono" value="14">
-    </div>
+      function parseTime(value) {
+        let text = String(value).trim();
 
-    <div class="error-msg" id="errorMsgReview"></div>
+        if (/^\d{3}$/.test(text)) {
+          text = `0${text}`;
+        }
 
-    <div class="result">
-      <div class="result-label">Log for Peer Review</div>
-      <div class="result-value mono" id="reviewTimeFriendly">--</div>
-      <div class="result-sub mono" id="reviewTimeExact">--</div>
+        if (/^\d{4}$/.test(text)) {
+          text = `${text.slice(0, 2)}:${text.slice(2)}`;
+        }
 
-      <hr class="result-divider">
+        const match = /^([01]?\d|2[0-3]):([0-5]\d)$/.exec(text);
+        if (!match) {
+          return null;
+        }
+        return Number(match[1]) * 60 + Number(match[2]);
+      }
 
-      <div class="result-label">Log for Adhoc Task</div>
-      <div class="result-value mono" id="adhocTimeFriendly">--</div>
-      <div class="result-sub mono" id="adhocTimeExact">--</div>
+      function formatClock(totalMinutes) {
+        const minuteValue = ((Math.round(totalMinutes) % 1440) + 1440) % 1440;
+        const hours = Math.floor(minuteValue / 60);
+        const minutes = minuteValue % 60;
+        return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+      }
 
-      <hr class="result-divider">
+      function formatDuration(totalMinutes) {
+        const safeMinutes = Math.max(0, Math.round(Number.isFinite(totalMinutes) ? totalMinutes : 0));
+        const hours = Math.floor(safeMinutes / 60);
+        const minutes = safeMinutes % 60;
 
-      <div class="result-label">Log for Full Triage</div>
-      <div class="result-value mono" id="triageTimeFriendly">--</div>
-      <div class="result-sub mono" id="triageTimeExact">--</div>
+        if (hours > 0 && minutes > 0) {
+          return `${hours}h ${minutes}m`;
+        }
+        if (hours > 0) {
+          return `${hours}h`;
+        }
+        return `${minutes}m`;
+      }
 
-      <hr class="result-divider">
+      function formatSignedDuration(deltaMinutes) {
+        const rounded = Math.round(Number(deltaMinutes) || 0);
+        if (rounded === 0) {
+          return '0m';
+        }
+        if (rounded < 0) {
+          return `−${formatDuration(Math.abs(rounded))}`;
+        }
+        return `+${formatDuration(rounded)}`;
+      }
 
-      <div class="result-mini">
-        <span>Break time</span>
-        <span id="breakTimeOut">--</span>
-      </div>
-      <div class="result-mini">
-        <span>Total time worked (net)</span>
-        <span id="totalTimeOut">--</span>
-      </div>
-      <div class="result-mini">
-        <span>Your rate</span>
-        <span id="achievedRateOut">--</span>
-      </div>
-      <div class="result-mini">
-        <span>Target rate</span>
-        <span id="rateUsedOut">--</span>
-      </div>
-    </div>
-  </div>
+      function formatCount(value) {
+        return Number(value).toLocaleString('en-US');
+      }
 
-  <!-- TAB 3: task rate calculator -->
-  <div class="tab-panel" id="tabRate">
-    <div class="field">
-      <label for="rateTasks">Tasks Completed</label>
-      <input type="text" inputmode="decimal" id="rateTasks" class="mono" value="20">
-    </div>
+      function formatRate(value) {
+        const rounded = Number(Number(value).toPrecision(6));
+        if (rounded !== 0 && Math.abs(rounded) < 1e-20) {
+          return rounded.toExponential().replace('e+', 'e');
+        }
+        return rounded.toLocaleString('en-US', { maximumFractionDigits: 20 });
+      }
 
-    <div class="row-2">
-      <div class="field">
-        <label for="rateHourInput">Hours</label>
-        <input type="text" inputmode="decimal" id="rateHourInput" class="mono" value="1">
-      </div>
-      <div class="field">
-        <label for="rateMinsInput">Minutes</label>
-        <input type="text" inputmode="decimal" id="rateMinsInput" class="mono" value="30">
-      </div>
-    </div>
+      function formatTimeRange(startMinutes, endMinutes) {
+        return `${formatClock(startMinutes)}–${formatClock(endMinutes)}`;
+      }
 
-    <div class="error-msg" id="errorMsgRate"></div>
+      function parseWholeNumber(value) {
+        const text = String(value).trim();
+        if (!/^\d+$/.test(text)) {
+          return null;
+        }
+        const number = Number(text);
+        return Number.isSafeInteger(number) ? number : null;
+      }
 
-    <div class="result">
-      <div class="result-label">Task Rate</div>
-      <div class="result-value mono" id="taskRateFriendly">--</div>
-      <div class="result-sub mono" id="taskRateExact">--</div>
-    </div>
-  </div>
-</div>
+      function parsePositiveNumber(value) {
+        const text = String(value).trim();
+        if (text === '') {
+          return null;
+        }
+        const number = Number(text);
+        return Number.isFinite(number) && number > 0 ? number : null;
+      }
 
-<script>
-(function () {
-  'use strict';
-  const $ = (id) => document.getElementById(id);
+      function escapeHtml(value) {
+        return String(value)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#039;');
+      }
 
-  function parseNum(raw, allowZero) {
-    if (raw === null || raw === undefined) return null;
-    const str = String(raw).trim();
-    if (str === '') return null;
-    const n = Number(str);
-    if (Number.isNaN(n) || !Number.isFinite(n)) return null;
-    if (allowZero) { if (n < 0) return null; } else { if (n <= 0) return null; }
-    if (n > 1e9) return null;
-    return n;
-  }
+      function sumBy(items, selector) {
+        return items.reduce((total, item) => total + selector(item), 0);
+      }
 
-  function friendlyHours(totalHours) {
-    const totalMinutes = Math.round(totalHours * 60);
-    const h = Math.floor(totalMinutes / 60);
-    const m = totalMinutes % 60;
-    if (h > 0 && m > 0) return h + 'h ' + m + 'm';
-    if (h > 0) return h + 'h';
-    return m + 'm';
-  }
+      function setAnnouncement(message) {
+        if (!message || message === lastAnnouncement) {
+          return;
+        }
+        lastAnnouncement = message;
+        els.liveRegion.textContent = message;
+      }
 
-  // ---------- TAB 1: Simple ----------
-  function recalcSimple() {
-    $('target').classList.remove('error');
-    $('tasks').classList.remove('error');
+      function getCategoryConfig(id) {
+        return CATEGORIES.find((category) => category.id === id);
+      }
 
-    const target = parseNum($('target').value);
-    const tasks = parseNum($('tasks').value);
+      function getActivityTypeConfig(type) {
+        return ACTIVITY_TYPES[type] || ACTIVITY_TYPES.meeting;
+      }
+      function renderTaskRows() {
+        els.taskList.innerHTML = CATEGORIES.map((category) => {
+          const categoryState = state.categories[category.id];
+          const escapedName = escapeHtml(category.name);
+          return `
+            <div class="task-row" data-task-row="${category.id}">
+              <div class="task-cell task-cell--name">
+                <span class="task-name">${escapedName}</span>
+                <p class="task-meta">Target <strong data-task-target="${category.id}">0m</strong><span aria-hidden="true"> · </span>Rec <strong data-task-recommended="${category.id}">0m</strong></p>
+              </div>
+              <div class="mini-field">
+                <label class="mini-label" for="${category.id}-count">Tasks<span class="sr-only"> for ${escapedName}</span></label>
+                <input type="number" id="${category.id}-count" name="${category.id}-count" value="${escapeHtml(categoryState.count)}" min="0" step="1" inputmode="numeric" aria-describedby="err-${category.id}-count">
+                <p class="field-error" id="err-${category.id}-count" data-field-error="${category.id}-count"></p>
+              </div>
+              <div class="mini-field">
+                <label class="mini-label" for="${category.id}-rate">Rate / hr<span class="sr-only"> for ${escapedName}</span></label>
+                <input type="number" id="${category.id}-rate" name="${category.id}-rate" value="${escapeHtml(categoryState.rate)}" min="0" step="any" inputmode="decimal" aria-describedby="err-${category.id}-rate">
+                <p class="field-error" id="err-${category.id}-rate" data-field-error="${category.id}-rate"></p>
+              </div>
+              <div class="mini-field task-override task-cell--override">
+                <label class="mini-label" for="${category.id}-override">Override (min)<span class="sr-only"> for ${escapedName}</span></label>
+                <div class="override-control">
+                  <input type="number" id="${category.id}-override" name="${category.id}-override" value="${escapeHtml(categoryState.override)}" min="0" step="1" inputmode="numeric" placeholder="Auto" aria-describedby="err-${category.id}-override">
+                  <button type="button" class="clear-link" data-clear-override="${category.id}" aria-label="Clear ${escapedName} override" ${categoryState.override === '' ? 'disabled' : ''}>Clear</button>
+                </div>
+                <p class="field-error" id="err-${category.id}-override" data-field-error="${category.id}-override"></p>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
 
-    let errMsg = '';
-    if (target === null) { $('target').classList.add('error'); errMsg = 'Enter a target greater than 0.'; }
-    if (tasks === null) { $('tasks').classList.add('error'); errMsg = errMsg || 'Enter a number of tasks greater than 0.'; }
+      function renderActivities() {
+        Object.keys(ACTIVITY_TYPES).forEach((type) => {
+          const typeConfig = ACTIVITY_TYPES[type];
+          const container = document.getElementById(`${type}-list`);
+          const entries = state.activities.filter((activity) => activity.type === type);
 
-    if (errMsg) {
-      $('errorMsg').textContent = errMsg;
-      $('friendlyTime').textContent = '--';
-      $('exactTime').textContent = '--';
-      return;
-    }
+          if (entries.length === 0) {
+            container.innerHTML = `<p class="activity-empty">No ${escapeHtml(typeConfig.plural.toLowerCase())} added.</p>`;
+            return;
+          }
 
-    $('errorMsg').textContent = '';
+          container.innerHTML = entries.map((activity, index) => {
+            const label = `${typeConfig.singular} ${index + 1}`;
+            const isDuration = activity.mode === 'duration';
+            const chipDuration = getDisplayDuration(activity);
+            return `
+              <div class="activity-entry" data-activity-id="${activity.id}" data-activity-type="${type}">
+                <div class="activity-top">
+                  <div class="activity-title-line">
+                    <span class="activity-name">${label}</span>
+                    <span class="activity-duration" data-activity-chip>${chipDuration}</span>
+                  </div>
+                  <button type="button" class="remove-button" data-remove-activity="${activity.id}" aria-label="Remove ${label}">Remove</button>
+                </div>
+                <div class="activity-controls">
+                  <div>
+                    <label class="sr-only" for="${activity.id}-mode">Entry type for ${label}</label>
+                    <select class="activity-mode" id="${activity.id}-mode" aria-describedby="err-${activity.id}">
+                      <option value="duration" ${isDuration ? 'selected' : ''}>Duration only</option>
+                      <option value="timed" ${!isDuration ? 'selected' : ''}>Start &amp; end</option>
+                    </select>
+                  </div>
+                  <div class="mode-panel" data-mode-panel="duration" ${isDuration ? '' : 'hidden'}>
+                    <div class="mini-field">
+                      <label class="mini-label" for="${activity.id}-duration">Minutes<span class="sr-only"> for ${label}</span></label>
+                      <div class="input-affix">
+                        <input type="number" id="${activity.id}-duration" data-activity-field="duration" value="${escapeHtml(activity.duration)}" min="1" step="1" inputmode="numeric" aria-describedby="err-${activity.id}">
+                        <span class="input-affix__suffix">min</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="mode-panel mode-panel--timed" data-mode-panel="timed" ${isDuration ? 'hidden' : ''}>
+                    <div class="mini-field">
+                      <label class="mini-label" for="${activity.id}-start">From<span class="sr-only"> time for ${label}</span></label>
+                      <input type="text" id="${activity.id}-start" data-activity-field="start" data-time-input value="${escapeHtml(activity.start)}" inputmode="numeric" maxlength="5" placeholder="HH:MM" autocomplete="off" spellcheck="false" aria-describedby="err-${activity.id}">
+                    </div>
+                    <span class="time-separator" aria-hidden="true">to</span>
+                    <div class="mini-field">
+                      <label class="mini-label" for="${activity.id}-end">To<span class="sr-only"> time for ${label}</span></label>
+                      <input type="text" id="${activity.id}-end" data-activity-field="end" data-time-input value="${escapeHtml(activity.end)}" inputmode="numeric" maxlength="5" placeholder="HH:MM" autocomplete="off" spellcheck="false" aria-describedby="err-${activity.id}">
+                    </div>
+                  </div>
+                </div>
+                <div class="field-error activity-error" id="err-${activity.id}" data-activity-error="${activity.id}"></div>
+              </div>
+            `;
+          }).join('');
+        });
 
-    const totalHours = tasks / target;
-    const totalMinutes = totalHours * 60;
+        applyActivityModes();
+        updateActivityChips();
+      }
 
-    $('friendlyTime').textContent = friendlyHours(totalHours);
-    $('exactTime').textContent = totalHours.toFixed(2) + ' hours (' + totalMinutes.toFixed(1) + ' minutes)';
-  }
+      function applyActivityModes() {
+        form.querySelectorAll('.activity-entry').forEach((row) => {
+          const modeSelect = row.querySelector('.activity-mode');
+          const mode = modeSelect ? modeSelect.value : 'duration';
+          row.querySelectorAll('[data-mode-panel]').forEach((panel) => {
+            panel.hidden = panel.dataset.modePanel !== mode;
+          });
+        });
+      }
 
-  $('target').addEventListener('input', recalcSimple);
-  $('tasks').addEventListener('input', recalcSimple);
+      function getDefaultTimedRange() {
+        const shiftStart = parseTime(state.shiftStart);
+        const shiftEnd = parseTime(state.shiftEnd);
+        const start = shiftStart === null ? 8 * 60 : shiftStart;
+        let end;
 
-  // ---------- TAB 2: Peer Review + Full Triage ----------
-  function recalcReview() {
-    ['peerReview', 'adhocTask', 'fullTriage', 'hourInput', 'minsInput', 'breakHourInput', 'breakMinsInput', 'targetRate'].forEach(id => $(id).classList.remove('error'));
+        if (shiftEnd !== null && shiftEnd > start) {
+          end = Math.min(start + 30, shiftEnd);
+        } else {
+          end = start + 30;
+        }
 
-    const peerReview = parseNum($('peerReview').value, true);
-    const adhocTask = parseNum($('adhocTask').value, true);
-    const fullTriage = parseNum($('fullTriage').value, true);
-    const hourVal = parseNum($('hourInput').value, true);
-    const minsVal = parseNum($('minsInput').value, true);
-    const breakHourVal = parseNum($('breakHourInput').value, true);
-    const breakMinsVal = parseNum($('breakMinsInput').value, true);
-    const targetRate = parseNum($('targetRate').value);
+        if (end <= start) {
+          end = start + 1;
+        }
 
-    let errMsg = '';
-    if (peerReview === null) { $('peerReview').classList.add('error'); errMsg = 'Enter peer review tasks (0 or more).'; }
-    if (adhocTask === null) { $('adhocTask').classList.add('error'); errMsg = errMsg || 'Enter adhoc tasks (0 or more).'; }
-    if (fullTriage === null) { $('fullTriage').classList.add('error'); errMsg = errMsg || 'Enter full triage tasks (0 or more).'; }
-    if (hourVal === null) { $('hourInput').classList.add('error'); errMsg = errMsg || 'Enter hours worked (0 or more).'; }
-    if (minsVal === null) { $('minsInput').classList.add('error'); errMsg = errMsg || 'Enter minutes worked (0 or more).'; }
-    if (breakHourVal === null) { $('breakHourInput').classList.add('error'); errMsg = errMsg || 'Enter break hours (0 or more).'; }
-    if (breakMinsVal === null) { $('breakMinsInput').classList.add('error'); errMsg = errMsg || 'Enter break minutes (0 or more).'; }
-    if (targetRate === null) { $('targetRate').classList.add('error'); errMsg = errMsg || 'Enter a task/hour rate greater than 0.'; }
+        return { start: formatClock(start), end: formatClock(end) };
+      }
 
-    const totalTasks = (peerReview || 0) + (adhocTask || 0) + (fullTriage || 0);
-    const grossTimeHours = (hourVal || 0) + (minsVal || 0) / 60;
-    const breakTimeHours = (breakHourVal || 0) + (breakMinsVal || 0) / 60;
-    const totalTimeHours = grossTimeHours - breakTimeHours;
+      function getDisplayDuration(activity) {
+        if (!activity) {
+          return '—';
+        }
 
-    if (!errMsg && totalTasks <= 0) {
-      errMsg = 'Enter at least one peer review, adhoc, or full triage task.';
-    }
-    if (!errMsg && breakTimeHours > grossTimeHours) {
-      $('breakHourInput').classList.add('error');
-      $('breakMinsInput').classList.add('error');
-      errMsg = 'Break time can\'t be more than hours/minutes worked.';
-    }
-    if (!errMsg && totalTimeHours <= 0) {
-      errMsg = 'Enter hours/minutes worked greater than your break time.';
-    }
+        if (activity.mode === 'duration') {
+          const duration = parseWholeNumber(activity.duration);
+          return duration !== null && duration > 0 ? formatDuration(duration) : '—';
+        }
 
-    if (errMsg) {
-      $('errorMsgReview').textContent = errMsg;
-      $('reviewTimeFriendly').textContent = '--';
-      $('reviewTimeExact').textContent = '--';
-      $('adhocTimeFriendly').textContent = '--';
-      $('adhocTimeExact').textContent = '--';
-      $('triageTimeFriendly').textContent = '--';
-      $('triageTimeExact').textContent = '--';
-      $('breakTimeOut').textContent = '--';
-      $('totalTimeOut').textContent = '--';
-      $('achievedRateOut').textContent = '--';
-      $('rateUsedOut').textContent = '--';
-      return;
-    }
+        const start = parseTime(activity.start);
+        const end = parseTime(activity.end);
+        if (start === null || end === null || end <= start) {
+          return '—';
+        }
+        return formatDuration(end - start);
+      }
 
-    $('errorMsgReview').textContent = '';
+      function updateActivityChips() {
+        form.querySelectorAll('.activity-entry').forEach((row) => {
+          const chip = row.querySelector('[data-activity-chip]');
+          if (!chip) {
+            return;
+          }
+          const mode = row.querySelector('.activity-mode')?.value || 'duration';
+          const durationInput = row.querySelector('[data-activity-field="duration"]');
+          const startInput = row.querySelector('[data-activity-field="start"]');
+          const endInput = row.querySelector('[data-activity-field="end"]');
+          const display = getDisplayDuration({
+            mode,
+            duration: durationInput ? durationInput.value : '',
+            start: startInput ? startInput.value : '',
+            end: endInput ? endInput.value : ''
+          });
+          chip.textContent = display;
+        });
+      }
 
-    // Split the net worked time (after subtracting breaks) between
-    // the task types, proportional to how many of each you did.
-    const reviewShare = peerReview / totalTasks;
-    const adhocShare = adhocTask / totalTasks;
-    const triageShare = fullTriage / totalTasks;
-    const reviewHours = totalTimeHours * reviewShare;
-    const adhocHours = totalTimeHours * adhocShare;
-    const triageHours = totalTimeHours * triageShare;
+      function syncStateFromDom() {
+        state.shiftStart = els.shiftStart.value;
+        state.shiftEnd = els.shiftEnd.value;
 
-    const achievedRate = totalTasks / totalTimeHours;
+        CATEGORIES.forEach((category) => {
+          const countInput = document.getElementById(`${category.id}-count`);
+          const rateInput = document.getElementById(`${category.id}-rate`);
+          const overrideInput = document.getElementById(`${category.id}-override`);
+          state.categories[category.id] = {
+            count: countInput ? countInput.value : '0',
+            rate: rateInput ? rateInput.value : String(category.defaultRate),
+            override: overrideInput ? overrideInput.value : ''
+          };
+        });
 
-    $('reviewTimeFriendly').textContent = friendlyHours(reviewHours);
-    $('reviewTimeExact').textContent = reviewHours.toFixed(2) + 'h (' + (reviewHours * 60).toFixed(1) + ' min) for ' + peerReview + ' task(s)';
+        const selectedMethod = form.querySelector('input[name="allocation-method"]:checked');
+        state.method = selectedMethod ? selectedMethod.value : DEFAULTS.method;
+        state.includeBreaks = els.includeBreaks.checked;
 
-    $('adhocTimeFriendly').textContent = friendlyHours(adhocHours);
-    $('adhocTimeExact').textContent = adhocHours.toFixed(2) + 'h (' + (adhocHours * 60).toFixed(1) + ' min) for ' + adhocTask + ' task(s)';
+        state.activities = Array.from(form.querySelectorAll('.activity-entry')).map((row) => {
+          const modeSelect = row.querySelector('.activity-mode');
+          const durationInput = row.querySelector('[data-activity-field="duration"]');
+          const startInput = row.querySelector('[data-activity-field="start"]');
+          const endInput = row.querySelector('[data-activity-field="end"]');
+          return {
+            id: row.dataset.activityId,
+            type: row.dataset.activityType,
+            mode: modeSelect && modeSelect.value === 'timed' ? 'timed' : 'duration',
+            duration: durationInput ? durationInput.value : '',
+            start: startInput ? startInput.value : '',
+            end: endInput ? endInput.value : ''
+          };
+        });
+      }
 
-    $('triageTimeFriendly').textContent = friendlyHours(triageHours);
-    $('triageTimeExact').textContent = triageHours.toFixed(2) + 'h (' + (triageHours * 60).toFixed(1) + ' min) for ' + fullTriage + ' task(s)';
+      function addActivity(type) {
+        const typeConfig = getActivityTypeConfig(type);
+        syncStateFromDom();
+        const timedRange = getDefaultTimedRange();
+        const newActivity = {
+          id: `activity-${++activityCounter}`,
+          type,
+          mode: 'duration',
+          duration: String(typeConfig.defaultDuration),
+          start: timedRange.start,
+          end: timedRange.end
+        };
 
-    $('breakTimeOut').textContent = breakTimeHours > 0 ? friendlyHours(breakTimeHours) : '0m';
-    $('totalTimeOut').textContent = friendlyHours(totalTimeHours) + ' (' + totalTasks + ' tasks)';
-    $('achievedRateOut').textContent = achievedRate.toFixed(2) + ' /hr';
-    $('rateUsedOut').textContent = targetRate + ' /hr';
-  }
+        state.activities.push(newActivity);
+        renderActivities();
+        refreshResults();
+        const newInput = document.getElementById(`${newActivity.id}-duration`);
+        if (newInput) {
+          newInput.focus();
+          newInput.select();
+        }
+      }
 
-  ['peerReview', 'adhocTask', 'fullTriage', 'hourInput', 'minsInput', 'breakHourInput', 'breakMinsInput', 'targetRate'].forEach(id => {
-    $(id).addEventListener('input', recalcReview);
-  });
+      function removeActivity(activityId) {
+        syncStateFromDom();
+        const activity = state.activities.find((item) => item.id === activityId);
+        if (!activity) {
+          return;
+        }
+        const type = activity.type;
+        state.activities = state.activities.filter((item) => item.id !== activityId);
+        renderActivities();
+        refreshResults();
+        const addButton = form.querySelector(`[data-add-activity="${type}"]`);
+        if (addButton) {
+          addButton.focus();
+        }
+      }
 
-  // ---------- TAB 3: Task Rate ----------
-  function recalcRate() {
-    ['rateTasks', 'rateHourInput', 'rateMinsInput'].forEach(id => $(id).classList.remove('error'));
+      function clearOverride(categoryId) {
+        const input = document.getElementById(`${categoryId}-override`);
+        if (!input) {
+          return;
+        }
+        input.value = '';
+        syncStateFromDom();
+        refreshResults();
+        input.focus();
+      }
+      function validateState(current) {
+        const fieldErrors = {};
+        const activityErrors = new Map();
+        let generalError = '';
+        let errorCount = 0;
 
-    const tasks = parseNum($('rateTasks').value);
-    const hourVal = parseNum($('rateHourInput').value, true);
-    const minsVal = parseNum($('rateMinsInput').value, true);
+        function addFieldError(key, message) {
+          if (!fieldErrors[key]) {
+            fieldErrors[key] = message;
+            errorCount += 1;
+          }
+        }
 
-    let errMsg = '';
-    if (tasks === null) { $('rateTasks').classList.add('error'); errMsg = 'Enter a number of tasks greater than 0.'; }
-    if (hourVal === null) { $('rateHourInput').classList.add('error'); errMsg = errMsg || 'Enter hours (0 or more).'; }
-    if (minsVal === null) { $('rateMinsInput').classList.add('error'); errMsg = errMsg || 'Enter minutes (0 or more).'; }
+        function addActivityIssue(activityId, fields, message) {
+          let info = activityErrors.get(activityId);
+          if (!info) {
+            info = { messages: [], fields: new Set() };
+          }
+          if (!info.messages.includes(message)) {
+            info.messages.push(message);
+            errorCount += 1;
+          }
+          fields.forEach((field) => info.fields.add(field));
+          activityErrors.set(activityId, info);
+        }
 
-    const totalHours = (hourVal || 0) + (minsVal || 0) / 60;
-    if (!errMsg && totalHours <= 0) {
-      errMsg = 'Enter hours/minutes greater than 0.';
-    }
+        const rawStart = current.shiftStart.trim();
+        const rawEnd = current.shiftEnd.trim();
+        const startMinutes = parseTime(rawStart);
+        const endMinutes = parseTime(rawEnd);
 
-    if (errMsg) {
-      $('errorMsgRate').textContent = errMsg;
-      $('taskRateFriendly').textContent = '--';
-      $('taskRateExact').textContent = '--';
-      return;
-    }
+        if (rawStart === '') {
+          addFieldError('shift-start', 'Enter a shift start time.');
+        } else if (startMinutes === null) {
+          addFieldError('shift-start', 'Use a valid 24-hour time, such as 08:30.');
+        }
 
-    $('errorMsgRate').textContent = '';
+        if (rawEnd === '') {
+          addFieldError('shift-end', 'Enter a shift end time.');
+        } else if (endMinutes === null) {
+          addFieldError('shift-end', 'Use a valid 24-hour time, such as 17:00.');
+        }
 
-    const rate = tasks / totalHours;
+        let shiftDuration = null;
+        if (startMinutes !== null && endMinutes !== null) {
+          if (endMinutes <= startMinutes) {
+            addFieldError('shift-end', 'End time must be after start time. Overnight shifts are not supported.');
+          } else {
+            shiftDuration = endMinutes - startMinutes;
+          }
+        }
 
-    $('taskRateFriendly').textContent = rate.toFixed(2) + ' /hr';
-    $('taskRateExact').textContent = tasks + ' tasks over ' + friendlyHours(totalHours) + ' (' + totalHours.toFixed(2) + 'h)';
-  }
+        const categories = CATEGORIES.map((categoryConfig) => {
+          const rawCategory = current.categories[categoryConfig.id] || {};
+          const rawCount = String(rawCategory.count ?? '').trim();
+          const rawRate = String(rawCategory.rate ?? '').trim();
+          const rawOverride = String(rawCategory.override ?? '').trim();
 
-  ['rateTasks', 'rateHourInput', 'rateMinsInput'].forEach(id => {
-    $(id).addEventListener('input', recalcRate);
-  });
+          let count = null;
+          if (rawCount === '') {
+            addFieldError(`${categoryConfig.id}-count`, 'Enter a task count.');
+          } else {
+            count = parseWholeNumber(rawCount);
+            if (count === null) {
+              addFieldError(`${categoryConfig.id}-count`, 'Task count must be a whole number, 0 or more.');
+            }
+          }
 
-  // ---------- Tab switching ----------
-  function showTab(name) {
-    $('tabSimple').classList.toggle('active', name === 'simple');
-    $('tabReview').classList.toggle('active', name === 'review');
-    $('tabRate').classList.toggle('active', name === 'rate');
-    $('tabBtnSimple').classList.toggle('active', name === 'simple');
-    $('tabBtnReview').classList.toggle('active', name === 'review');
-    $('tabBtnRate').classList.toggle('active', name === 'rate');
-  }
-  $('tabBtnSimple').addEventListener('click', () => showTab('simple'));
-  $('tabBtnReview').addEventListener('click', () => showTab('review'));
-  $('tabBtnRate').addEventListener('click', () => showTab('rate'));
+          let rate = null;
+          if (rawRate === '') {
+            addFieldError(`${categoryConfig.id}-rate`, 'Enter a target rate.');
+          } else {
+            rate = parsePositiveNumber(rawRate);
+            if (rate === null) {
+              addFieldError(`${categoryConfig.id}-rate`, 'Rate must be a number greater than 0.');
+            }
+          }
 
-  recalcSimple();
-  recalcReview();
-  recalcRate();
-})();
-</script>
+          let override = null;
+          if (rawOverride !== '') {
+            override = parseWholeNumber(rawOverride);
+            if (override === null) {
+              addFieldError(`${categoryConfig.id}-override`, 'Override must be whole minutes, 0 or more.');
+            }
+          }
 
+          let original = null;
+          if (count !== null && rate !== null) {
+            const rawTargetMinutes = (count * 60) / rate;
+            if (!Number.isFinite(rawTargetMinutes) || rawTargetMinutes > Number.MAX_SAFE_INTEGER) {
+              addFieldError(`${categoryConfig.id}-rate`, 'This target duration is too large to calculate safely. Use a higher rate.');
+            } else {
+              original = Math.round(rawTargetMinutes);
+              if (!Number.isSafeInteger(original)) {
+                addFieldError(`${categoryConfig.id}-rate`, 'This target duration is too large to calculate safely. Use a higher rate.');
+                original = null;
+              }
+            }
+          }
+
+          return {
+            id: categoryConfig.id,
+            name: categoryConfig.name,
+            count,
+            rate,
+            override,
+            manual: override !== null,
+            original
+          };
+        });
+
+        const typeIndex = { meeting: 0, training: 0, break: 0 };
+        const activities = current.activities.map((activity) => {
+          const type = ACTIVITY_TYPES[activity.type] ? activity.type : 'meeting';
+          typeIndex[type] += 1;
+          const label = `${ACTIVITY_TYPES[type].singular} ${typeIndex[type]}`;
+          const mode = activity.mode === 'timed' ? 'timed' : 'duration';
+          const item = {
+            id: activity.id,
+            type,
+            label,
+            mode,
+            rawDuration: String(activity.duration ?? ''),
+            rawStart: String(activity.start ?? ''),
+            rawEnd: String(activity.end ?? ''),
+            duration: null,
+            start: null,
+            end: null
+          };
+
+          if (mode === 'duration') {
+            const rawDuration = item.rawDuration.trim();
+            if (rawDuration === '') {
+              addActivityIssue(item.id, ['duration'], 'Enter a duration in minutes.');
+            } else {
+              const duration = parseWholeNumber(rawDuration);
+              if (duration === null) {
+                addActivityIssue(item.id, ['duration'], 'Duration must be positive whole minutes.');
+              } else if (duration <= 0) {
+                addActivityIssue(item.id, ['duration'], 'Duration must be at least 1 minute.');
+              } else {
+                item.duration = duration;
+              }
+            }
+          } else {
+            const rawStartTime = item.rawStart.trim();
+            const rawEndTime = item.rawEnd.trim();
+            const activityStart = parseTime(rawStartTime);
+            const activityEnd = parseTime(rawEndTime);
+
+            if (rawStartTime === '') {
+              addActivityIssue(item.id, ['start'], 'Enter a start time.');
+            } else if (activityStart === null) {
+              addActivityIssue(item.id, ['start'], 'Use a valid 24-hour start time (HH:MM).');
+            }
+
+            if (rawEndTime === '') {
+              addActivityIssue(item.id, ['end'], 'Enter an end time.');
+            } else if (activityEnd === null) {
+              addActivityIssue(item.id, ['end'], 'Use a valid 24-hour end time (HH:MM).');
+            }
+
+            if (activityStart !== null && activityEnd !== null) {
+              if (activityEnd <= activityStart) {
+                addActivityIssue(item.id, ['start', 'end'], 'End time must be after start time.');
+              } else {
+                item.start = activityStart;
+                item.end = activityEnd;
+                item.duration = activityEnd - activityStart;
+
+                if (shiftDuration !== null) {
+                  if (activityStart < startMinutes) {
+                    addActivityIssue(item.id, ['start'], `Starts before the shift (${formatClock(startMinutes)}).`);
+                  }
+                  if (activityEnd > endMinutes) {
+                    addActivityIssue(item.id, ['end'], `Ends after the shift (${formatClock(endMinutes)}).`);
+                  }
+                }
+              }
+            }
+          }
+
+          return item;
+        });
+
+        activities.forEach((activity) => {
+          activity.validTimeRange = activity.start !== null && activity.end !== null && activity.end > activity.start;
+        });
+
+        for (let firstIndex = 0; firstIndex < activities.length; firstIndex += 1) {
+          const first = activities[firstIndex];
+          if (!first.validTimeRange) {
+            continue;
+          }
+          for (let secondIndex = firstIndex + 1; secondIndex < activities.length; secondIndex += 1) {
+            const second = activities[secondIndex];
+            if (!second.validTimeRange) {
+              continue;
+            }
+            if (first.start < second.end && second.start < first.end) {
+              addActivityIssue(
+                first.id,
+                ['start', 'end'],
+                `Overlaps with ${second.label} (${formatTimeRange(second.start, second.end)}).`
+              );
+              addActivityIssue(
+                second.id,
+                ['start', 'end'],
+                `Overlaps with ${first.label} (${formatTimeRange(first.start, first.end)}).`
+              );
+            }
+          }
+        }
+
+        const totals = {
+          meetings: sumBy(activities.filter((activity) => activity.type === 'meeting' && activity.duration !== null), (activity) => activity.duration),
+          training: sumBy(activities.filter((activity) => activity.type === 'training' && activity.duration !== null), (activity) => activity.duration),
+          breaks: sumBy(activities.filter((activity) => activity.type === 'break' && activity.duration !== null), (activity) => activity.duration)
+        };
+        totals.all = totals.meetings + totals.training + totals.breaks;
+        const workingActivityTotal = totals.meetings + totals.training;
+        const allDurationsKnown = activities.every((activity) => activity.duration !== null);
+
+        if (allDurationsKnown) {
+          const generalErrors = [];
+          if (workingActivityTotal > WORKING_BUDGET_MINUTES) {
+            generalErrors.push(
+              `Meetings and training total ${formatDuration(workingActivityTotal)}, which is ${formatDuration(workingActivityTotal - WORKING_BUDGET_MINUTES)} over the fixed 8-hour daily working-time budget.`
+            );
+            errorCount += 1;
+          }
+          if (totals.breaks > BREAK_ALLOWANCE_MINUTES) {
+            generalErrors.push(
+              `Break entries total ${formatDuration(totals.breaks)}, which is ${formatDuration(totals.breaks - BREAK_ALLOWANCE_MINUTES)} over the fixed 1-hour daily break allowance. Extra break time does not reduce the 8-hour working budget.`
+            );
+            errorCount += 1;
+          }
+          generalError = generalErrors.join(' ');
+        }
+
+        const isValid = errorCount === 0 && shiftDuration !== null && allDurationsKnown;
+        const availableMinutes = isValid ? WORKING_BUDGET_MINUTES - workingActivityTotal : null;
+
+        return {
+          isValid,
+          errorCount,
+          errors: {
+            fields: fieldErrors,
+            activities: activityErrors,
+            general: generalError
+          },
+          method: current.method === 'proportional' ? 'proportional' : 'target',
+          includeBreaks: Boolean(current.includeBreaks),
+          shift: {
+            start: startMinutes,
+            end: endMinutes,
+            duration: shiftDuration
+          },
+          categories,
+          activities,
+          totals,
+          workingActivityTotal,
+          allDurationsKnown,
+          timedCount: activities.filter((activity) => activity.mode === 'timed').length,
+          durationOnlyCount: activities.filter((activity) => activity.mode === 'duration').length,
+          dailyRequirement: DAILY_REQUIREMENT_MINUTES,
+          workingBudget: WORKING_BUDGET_MINUTES,
+          breakAllowance: BREAK_ALLOWANCE_MINUTES,
+          availableMinutes
+        };
+      }
+
+      function renderValidation(model) {
+        document.querySelectorAll('[data-field-error]').forEach((errorNode) => {
+          const key = errorNode.dataset.fieldError;
+          const message = model.errors.fields[key] || '';
+          errorNode.textContent = message;
+
+          const input = document.getElementById(key);
+          if (input) {
+            if (message) {
+              input.setAttribute('aria-invalid', 'true');
+            } else {
+              input.removeAttribute('aria-invalid');
+            }
+            const fieldWrapper = input.closest('.field, .mini-field');
+            if (fieldWrapper) {
+              fieldWrapper.classList.toggle('has-error', Boolean(message));
+            }
+          }
+        });
+
+        form.querySelectorAll('.activity-entry').forEach((row) => {
+          const activityId = row.dataset.activityId;
+          const info = model.errors.activities.get(activityId);
+          const errorNode = row.querySelector('[data-activity-error]');
+          row.classList.toggle('has-error', Boolean(info));
+
+          if (errorNode) {
+            if (!info) {
+              errorNode.innerHTML = '';
+            } else if (info.messages.length === 1) {
+              errorNode.textContent = info.messages[0];
+            } else {
+              errorNode.innerHTML = `<ul>${info.messages.map((message) => `<li>${escapeHtml(message)}</li>`).join('')}</ul>`;
+            }
+          }
+
+          row.querySelectorAll('[data-activity-field]').forEach((input) => {
+            const field = input.dataset.activityField;
+            const invalid = Boolean(info && info.fields.has(field));
+            if (invalid) {
+              input.setAttribute('aria-invalid', 'true');
+            } else {
+              input.removeAttribute('aria-invalid');
+            }
+            const fieldWrapper = input.closest('.mini-field');
+            if (fieldWrapper) {
+              fieldWrapper.classList.toggle('has-error', invalid);
+            }
+          });
+        });
+
+        els.activityGeneralError.hidden = !model.errors.general;
+        els.activityGeneralError.textContent = model.errors.general || '';
+
+        els.formStatus.hidden = model.isValid;
+        if (!model.isValid) {
+          const issueWord = model.errorCount === 1 ? 'issue needs' : 'issues need';
+          els.formErrorCount.textContent = `${model.errorCount} ${issueWord} attention.`;
+        }
+
+        if (model.shift.duration !== null) {
+          els.shiftDurationTag.textContent = formatDuration(model.shift.duration);
+        } else {
+          els.shiftDurationTag.textContent = '—';
+        }
+
+        form.querySelectorAll('[data-clear-override]').forEach((button) => {
+          const categoryId = button.dataset.clearOverride;
+          const input = document.getElementById(`${categoryId}-override`);
+          button.disabled = !input || input.value.trim() === '';
+        });
+      }
+      function allocateProportionally(budget, weights) {
+        const allocations = weights.map(() => 0);
+        const safeBudget = Math.max(0, Math.round(Number(budget) || 0));
+        if (safeBudget <= 0 || weights.length === 0) {
+          return allocations;
+        }
+
+        const positiveIndices = weights
+          .map((weight, index) => ({ weight: Number(weight), index }))
+          .filter((item) => Number.isFinite(item.weight) && item.weight > 0);
+
+        if (positiveIndices.length === 0) {
+          return allocations;
+        }
+
+        const totalWeight = positiveIndices.reduce((total, item) => total + item.weight, 0);
+        if (!Number.isFinite(totalWeight) || totalWeight <= 0) {
+          return allocations;
+        }
+
+        const exact = weights.map((weight) => {
+          const safeWeight = Number.isFinite(Number(weight)) && Number(weight) > 0 ? Number(weight) : 0;
+          return safeWeight > 0 ? safeBudget * (safeWeight / totalWeight) : 0;
+        });
+
+        let used = 0;
+        exact.forEach((value, index) => {
+          if (value > 0) {
+            allocations[index] = Math.floor(value);
+            used += allocations[index];
+          }
+        });
+
+        let leftover = safeBudget - used;
+
+        while (leftover < 0) {
+          let largestIndex = -1;
+          let largestValue = -1;
+          allocations.forEach((value, index) => {
+            if (value > largestValue) {
+              largestValue = value;
+              largestIndex = index;
+            }
+          });
+          if (largestIndex < 0 || allocations[largestIndex] <= 0) {
+            break;
+          }
+          allocations[largestIndex] -= 1;
+          leftover += 1;
+        }
+
+        const ranked = positiveIndices
+          .map((item) => ({
+            index: item.index,
+            fraction: exact[item.index] - Math.floor(exact[item.index])
+          }))
+          .sort((first, second) => second.fraction - first.fraction || first.index - second.index);
+
+        let cursor = 0;
+        while (leftover > 0 && ranked.length > 0) {
+          allocations[ranked[cursor % ranked.length].index] += 1;
+          cursor += 1;
+          leftover -= 1;
+        }
+
+        return allocations;
+      }
+
+      function calculateResult(model) {
+        const available = model.availableMinutes;
+        const categories = model.categories.map((category) => ({
+          ...category,
+          recommended: category.manual ? category.override : 0
+        }));
+
+        const manualCategories = categories.filter((category) => category.manual);
+        const eligibleCategories = categories.filter((category) => !category.manual);
+        const manualTotal = sumBy(manualCategories, (category) => category.override);
+        const manualOverBudget = manualTotal > available;
+        const remainingBudget = Math.max(0, available - manualTotal);
+        let fitApplied = false;
+        let eligibleOriginalTotal = 0;
+        let eligibleRecommendedTotal = 0;
+
+        if (!manualOverBudget && eligibleCategories.length > 0) {
+          if (model.method === 'target') {
+            eligibleOriginalTotal = sumBy(eligibleCategories, (category) => category.original);
+            if (eligibleOriginalTotal > remainingBudget) {
+              fitApplied = true;
+              const allocations = allocateProportionally(
+                remainingBudget,
+                eligibleCategories.map((category) => category.original)
+              );
+              eligibleCategories.forEach((category, index) => {
+                category.recommended = allocations[index];
+              });
+            } else {
+              eligibleCategories.forEach((category) => {
+                category.recommended = category.original;
+              });
+            }
+          } else {
+            const eligibleCountTotal = sumBy(eligibleCategories, (category) => category.count);
+            if (eligibleCountTotal > 0) {
+              const allocations = allocateProportionally(
+                remainingBudget,
+                eligibleCategories.map((category) => category.count)
+              );
+              eligibleCategories.forEach((category, index) => {
+                category.recommended = allocations[index];
+              });
+            }
+          }
+
+          eligibleRecommendedTotal = sumBy(eligibleCategories, (category) => category.recommended);
+        }
+
+        categories.forEach((category) => {
+          if (category.manual) {
+            category.recommended = category.override;
+          }
+          category.difference = category.recommended - category.original;
+        });
+
+        const totalRecommended = sumBy(categories, (category) => category.recommended);
+        const totalOriginal = sumBy(categories, (category) => category.original);
+        const unallocated = Math.max(0, available - totalRecommended);
+        const shortage = Math.max(0, totalRecommended - available);
+        const totalCounts = sumBy(categories, (category) => category.count);
+        const awaitingTasks = categories.every((category) => category.count === 0 && !category.manual);
+        const hasTaskDemand = totalCounts > 0 || categories.some((category) => category.manual && category.override > 0);
+
+        const finalLoggedTotal = totalRecommended
+          + model.totals.meetings
+          + model.totals.training
+          + (model.includeBreaks ? model.breakAllowance : 0);
+
+        const warnings = [];
+
+        if (manualOverBudget) {
+          warnings.push({
+            title: 'Manual overrides exceed available time',
+            message: `Fixed overrides total ${formatDuration(manualTotal)}, but only ${formatDuration(available)} of the fixed 8-hour working-time budget is available for tasks. The fixed durations are shown, automatic allocations are 0m, and the task total is ${formatDuration(manualTotal - available)} over budget.`
+          });
+        } else if (fitApplied) {
+          const budgetContext = manualCategories.length > 0
+            ? `only ${formatDuration(remainingBudget)} remained after fixed overrides`
+            : `only ${formatDuration(remainingBudget)} of working-time budget was available`;
+          warnings.push({
+            title: 'Recommendations fitted to the time budget',
+            message: `Eligible target durations total ${formatDuration(eligibleOriginalTotal)}, but ${budgetContext}. Those categories were scaled proportionally to ${formatDuration(eligibleRecommendedTotal)} using whole minutes. Fitting the time does not guarantee the target rates can be achieved.`
+          });
+        } else if (available === 0 && hasTaskDemand) {
+          warnings.push({
+            title: 'No available task time',
+            message: 'Meetings and training use the full fixed 8-hour working-time budget. Task recommendations are 0m until a meeting or training entry is adjusted.'
+          });
+        } else if (totalOriginal > available) {
+          const overrideNote = manualCategories.length > 0
+            ? 'Manual overrides reduce the requested total below the original target.'
+            : 'The selected allocation method keeps its recommendation separate from the target-rate total.';
+          warnings.push({
+            title: 'Target-rate time exceeds available time',
+            message: `Original target durations total ${formatDuration(totalOriginal)}, which is ${formatDuration(totalOriginal - available)} above the ${formatDuration(available)} available from the fixed 8-hour working-time budget. ${overrideNote} Target rates may not be achievable today.`
+          });
+        }
+
+        if (!awaitingTasks && unallocated > 0) {
+          warnings.push({
+            title: 'Unallocated task time',
+            message: `${formatDuration(unallocated)} of the fixed 8-hour working-time budget remains unallocated. No task time was invented or silently assigned; adjust task counts, rates, or the allocation method if you want to assign it.`
+          });
+        }
+
+        const notes = [];
+        if (!awaitingTasks && unallocated > 0) {
+          if (model.method === 'target') {
+            notes.push({
+              text: `${formatDuration(unallocated)} remains unallocated. Target Rate recommendations do not fill leftover time automatically; use a manual override if you need to assign it. No extra task time was invented.`
+            });
+          } else {
+            notes.push({
+              text: `${formatDuration(unallocated)} remains unallocated because no eligible task counts can receive it. Add a task count or use a manual override. No extra task time was invented.`
+            });
+          }
+        }
+
+        return {
+          model,
+          method: model.method,
+          methodLabel: METHOD_LABELS[model.method],
+          shift: model.shift,
+          available,
+          categories,
+          manualCategories,
+          manualTotal,
+          manualOverBudget,
+          eligibleOriginalTotal,
+          eligibleRecommendedTotal,
+          fitApplied,
+          totalRecommended,
+          totalOriginal,
+          totalCounts,
+          unallocated,
+          shortage,
+          awaitingTasks,
+          finalLoggedTotal,
+          includeBreaks: model.includeBreaks,
+          meetingTotal: model.totals.meetings,
+          trainingTotal: model.totals.training,
+          workingActivityTotal: model.workingActivityTotal,
+          breakEntryTotal: model.totals.breaks,
+          breakAllowance: model.breakAllowance,
+          dailyRequirement: model.dailyRequirement,
+          workingBudget: model.workingBudget,
+          activityTotal: model.totals.all,
+          timedCount: model.timedCount,
+          durationOnlyCount: model.durationOnlyCount,
+          warnings,
+          notes
+        };
+      }
+
+      function updateTaskSummaries(result) {
+        result.categories.forEach((category) => {
+          const targetNode = document.querySelector(`[data-task-target="${category.id}"]`);
+          const recommendedNode = document.querySelector(`[data-task-recommended="${category.id}"]`);
+          if (targetNode) {
+            targetNode.textContent = formatDuration(category.original);
+          }
+          if (recommendedNode) {
+            recommendedNode.textContent = formatDuration(category.recommended);
+          }
+        });
+
+        els.targetTotal.textContent = formatDuration(result.totalOriginal);
+      }
+      function refreshResults() {
+        const model = validateState(state);
+        renderValidation(model);
+        updateActivityChips();
+
+        if (model.isValid) {
+          const result = calculateResult(model);
+          lastValid = result;
+          renderResults(result, false);
+          updateTaskSummaries(result);
+
+          if (result.warnings.length > 0) {
+            setAnnouncement(`Calculation updated with a warning: ${result.warnings[0].title}.`);
+          } else if (previousValidity === false) {
+            setAnnouncement('Inputs corrected. Estimate recalculated.');
+          }
+        } else {
+          if (lastValid) {
+            renderResults(lastValid, true);
+            updateTaskSummaries(lastValid);
+          } else {
+            renderResults(null, true);
+          }
+          setAnnouncement('Inputs need correction. Showing the last valid estimate.');
+        }
+
+        previousValidity = model.isValid;
+      }
+
+      function resultStatus(result, isStale) {
+        if (isStale) {
+          return {
+            label: 'Needs correction',
+            kind: 'danger',
+            copy: 'Results are paused at the last valid estimate. Fix the highlighted inputs to update them.'
+          };
+        }
+        if (result.warnings.length > 0) {
+          return {
+            label: 'Review needed',
+            kind: 'warning',
+            copy: 'The inputs are valid, but the time budget needs attention.'
+          };
+        }
+        if (result.awaitingTasks) {
+          return {
+            label: 'Ready',
+            kind: 'neutral',
+            copy: 'Add task counts or a manual override to start an estimate.'
+          };
+        }
+        return {
+          label: 'Calculated',
+          kind: 'success',
+          copy: 'All inputs are valid. Estimates update live as you make changes.'
+        };
+      }
+
+      function buildStaleNotice() {
+        return `
+          <div class="notice notice--danger" data-testid="stale-notice">
+            <span class="notice-icon" aria-hidden="true">!</span>
+            <div>
+              <strong>Showing the last valid estimate</strong>
+              <p>Some current inputs need correction. The results below are from the last valid set of inputs and will resume automatically once the form is fixed.</p>
+            </div>
+          </div>
+        `;
+      }
+
+      function buildWarnings(warnings) {
+        return warnings.map((warning) => `
+          <div class="notice notice--warning" data-testid="result-warning">
+            <span class="notice-icon" aria-hidden="true">!</span>
+            <div>
+              <strong>${escapeHtml(warning.title)}</strong>
+              <p>${escapeHtml(warning.message)}</p>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      function buildRecommendedList(result) {
+        return result.categories.map((category) => {
+          const badge = category.manual ? '<span class="mini-badge">Manual</span>' : '';
+          const fitBadge = result.fitApplied && !category.manual && category.original > 0 && category.recommended !== category.original
+            ? '<span class="mini-badge mini-badge--fit">Fitted</span>'
+            : '';
+          const subLabel = category.manual
+            ? `Manual override · target ${formatDuration(category.original)}`
+            : `Target ${formatDuration(category.original)}`;
+          return `
+            <li class="rec-item">
+              <div class="rec-info">
+                <span class="rec-name">${escapeHtml(category.name)} ${badge} ${fitBadge}</span>
+                <span class="rec-sub">${escapeHtml(subLabel)}</span>
+              </div>
+              <strong class="rec-value" data-testid="recommended-${category.id}">${formatDuration(category.recommended)}</strong>
+            </li>
+          `;
+        }).join('');
+      }
+
+      function buildBreakNote(result) {
+        const allowance = formatDuration(result.breakAllowance);
+        const entryCopy = result.breakEntryTotal > 0
+          ? `Break entries total ${formatDuration(result.breakEntryTotal)} of the fixed ${allowance} daily allowance.`
+          : `No break entries were added; the fixed ${allowance} daily break is still part of the daily requirement.`;
+        if (result.includeBreaks) {
+          return `${entryCopy} The fixed ${allowance} break is included in the final logged total.`;
+        }
+        return `${entryCopy} The fixed ${allowance} break is excluded from the final logged total by the switch.`;
+      }
+
+      function buildCalculationDetails(result) {
+        const manualOverrideText = result.manualCategories.length > 0
+          ? result.manualCategories.map((category) => `${escapeHtml(category.name)} at ${formatDuration(category.override)}`).join('; ')
+          : '';
+
+        const methodExplanation = result.method === 'target'
+          ? 'Target Rate starts with task count ÷ target rate for each category. If the eligible target durations exceed the remaining budget, only eligible categories are scaled proportionally. Whole-minute rounding uses a largest-remainder step so the fitted total does not exceed the budget.'
+          : 'Proportional Allocation divides the remaining available task time by each eligible category’s share of the eligible task count. Whole-minute shares use a largest-remainder step so the combined recommendation does not exceed the budget.';
+
+        let overlapExplanation;
+        if (result.timedCount === 0 && result.durationOnlyCount === 0) {
+          overlapExplanation = 'No meeting, training, or break entries were added.';
+        } else if (result.timedCount === 0) {
+          overlapExplanation = 'No timed entries were added, so no overlap check was possible.';
+        } else {
+          overlapExplanation = `${result.timedCount} timed ${result.timedCount === 1 ? 'entry was' : 'entries were'} checked for overlaps; no conflicts were found among them.`;
+        }
+        if (result.durationOnlyCount > 0) {
+          overlapExplanation += ` ${result.durationOnlyCount} duration-only ${result.durationOnlyCount === 1 ? 'entry is' : 'entries are'} included in the totals, but exact placement is unknown, so ${result.durationOnlyCount === 1 ? 'its overlap was' : 'their overlaps were'} not checked.`;
+        }
+
+        const warningMarkup = result.warnings.map((warning) => `
+          <p><strong>${escapeHtml(warning.title)}.</strong> ${escapeHtml(warning.message)}</p>
+        `).join('');
+
+        const categoryRows = result.categories.map((category) => {
+          const badges = [
+            category.manual ? '<span class="mini-badge">Manual</span>' : '',
+            result.fitApplied && !category.manual && category.original > 0 && category.recommended !== category.original
+              ? '<span class="mini-badge mini-badge--fit">Fitted</span>'
+              : ''
+          ].join(' ');
+          const differenceClass = category.difference < 0
+            ? 'difference-negative'
+            : category.difference > 0
+              ? 'difference-positive'
+              : '';
+          return `
+            <tr>
+              <td><span class="breakdown-name">${escapeHtml(category.name)} ${badges}</span></td>
+              <td>${formatCount(category.count)}</td>
+              <td>${formatRate(category.rate)}</td>
+              <td>${formatDuration(category.original)}</td>
+              <td>${formatDuration(category.recommended)}</td>
+              <td class="${differenceClass}">${formatSignedDuration(category.difference)}</td>
+            </tr>
+          `;
+        }).join('');
+
+        const manualNote = manualOverrideText
+          ? `<p class="details-note"><strong>Manual overrides:</strong> ${manualOverrideText}. ${result.manualCategories.length === 1 ? 'This duration was' : 'These durations were'} held fixed before other categories were allocated.</p>`
+          : '<p class="details-note"><strong>Manual overrides:</strong> none.</p>';
+
+        const budgetOutcome = result.shortage > 0
+          ? `<p class="details-note"><strong>Over budget:</strong> the recommended task total is ${formatDuration(result.shortage)} above available task time.</p>`
+          : `<p class="details-note"><strong>Unallocated task time:</strong> ${formatDuration(result.unallocated)}.</p>`;
+
+        const breakLine = result.includeBreaks
+          ? `+ ${formatDuration(result.breakAllowance)} fixed break`
+          : `+ 0m break (excluded by switch)`;
+
+        const finalFormula = `${formatDuration(result.totalRecommended)} tasks + ${formatDuration(result.meetingTotal)} meetings + ${formatDuration(result.trainingTotal)} training ${breakLine} = ${formatDuration(result.finalLoggedTotal)}.`;
+
+        return `
+          <details class="calc-details" data-testid="calculation-details">
+            <summary>Calculation details</summary>
+            <div class="details-content">
+              <section class="details-section">
+                <h4>Available time</h4>
+                <dl class="formula-list">
+                  <div><dt>Fixed daily working budget</dt><dd>${formatDuration(result.workingBudget)}</dd></div>
+                  <div><dt>− Meetings</dt><dd>${formatDuration(result.meetingTotal)}</dd></div>
+                  <div><dt>− Training</dt><dd>${formatDuration(result.trainingTotal)}</dd></div>
+                  <div class="formula-total"><dt>= Available task time</dt><dd>${formatDuration(result.available)}</dd></div>
+                </dl>
+                <p class="details-note"><strong>Fixed daily requirement:</strong> ${formatDuration(result.dailyRequirement)} = ${formatDuration(result.workingBudget)} working + ${formatDuration(result.breakAllowance)} break. Break entries total ${formatDuration(result.breakEntryTotal)} of the ${formatDuration(result.breakAllowance)} allowance and do not reduce the working budget.</p>
+                <p class="details-note">Shift ${formatTimeRange(result.shift.start, result.shift.end)} (${formatDuration(result.shift.duration)}) is used for same-day validation and display only.</p>
+                <p class="details-note">${escapeHtml(overlapExplanation)}</p>
+              </section>
+
+              <section class="details-section">
+                <h4>Task breakdown</h4>
+                <div class="table-wrap">
+                  <table class="task-breakdown">
+                    <caption class="sr-only">Original target durations, recommendations, and differences for each task category</caption>
+                    <thead>
+                      <tr>
+                        <th scope="col">Category</th>
+                        <th scope="col">Tasks</th>
+                        <th scope="col">Rate/hr</th>
+                        <th scope="col">Original</th>
+                        <th scope="col">Recommended</th>
+                        <th scope="col">Difference</th>
+                      </tr>
+                    </thead>
+                    <tbody>${categoryRows}</tbody>
+                  </table>
+                </div>
+                <p class="details-note">Difference = recommended − original target-rate duration. A negative value is time removed from the original target.</p>
+                ${manualNote}
+                ${result.fitApplied ? `<div class="details-callout"><p><strong>Fitted allocation.</strong> Eligible target durations were reduced proportionally to fit the remaining budget. This keeps recommendations inside the available time, but it does not mean the target productivity rates will be achieved.</p></div>` : ''}
+                ${warningMarkup ? `<div class="details-callout">${warningMarkup}</div>` : ''}
+                ${budgetOutcome}
+              </section>
+
+              <section class="details-section">
+                <h4>Allocation method</h4>
+                <p class="details-note">${escapeHtml(methodExplanation)}</p>
+                <p class="details-note">Method selected: <strong>${escapeHtml(result.methodLabel)}</strong>. Manual overrides are treated as fixed allocations before the rest of the budget is calculated.</p>
+                <p class="details-note">All times are calculated in whole minutes. Fitted or proportional shares use a largest-remainder rounding pass, so the combined recommendation does not exceed the available budget.</p>
+              </section>
+
+              <section class="details-section">
+                <h4>Final logged total</h4>
+                <p class="details-formula">${escapeHtml(finalFormula)}</p>
+                <p class="details-note">${escapeHtml(buildBreakNote(result))} Breaks do not reduce the fixed 8-hour working budget.</p>
+              </section>
+            </div>
+          </details>
+        `;
+      }
+
+      function renderResults(result, isStale) {
+        const detailsWasOpen = Boolean(els.resultsContent.querySelector('.calc-details')?.open);
+        els.resultsPanel.classList.toggle('is-stale', Boolean(isStale));
+
+        if (!result) {
+          els.resultsContent.innerHTML = `
+            <div class="results-header">
+              <div>
+                <p class="eyebrow">Live estimate</p>
+                <h2 id="results-title">Time summary</h2>
+              </div>
+              <span class="status-badge status-badge--danger" data-testid="status-badge"><span class="status-dot" aria-hidden="true"></span>Needs correction</span>
+            </div>
+            <p class="status-copy">Fix the highlighted inputs to calculate a trustworthy recommendation.</p>
+            ${buildStaleNotice()}
+            <div class="empty-message">No valid calculation is available yet.</div>
+          `;
+          return;
+        }
+
+        const status = resultStatus(result, isStale);
+        const warningMarkup = buildWarnings(result.warnings);
+        const awaitingMarkup = result.awaitingTasks
+          ? '<p class="empty-message">Add task counts on the left to generate recommendations, or enter a manual override for a category.</p>'
+          : '';
+        const notesMarkup = result.notes.map((note) => `
+          <div class="inline-note result-note">
+            <span class="inline-note__mark" aria-hidden="true">i</span>
+            <span>${escapeHtml(note.text)}</span>
+          </div>
+        `).join('');
+        const activitySummaryText = result.workingActivityTotal > 0
+          ? `after ${formatDuration(result.workingActivityTotal)} of meetings and training`
+          : 'with no meeting or training deductions';
+
+        els.resultsContent.innerHTML = `
+          <div class="results-header">
+            <div>
+              <p class="eyebrow">Live estimate</p>
+              <h2 id="results-title">Time summary</h2>
+            </div>
+            <span class="status-badge status-badge--${status.kind}" data-testid="status-badge"><span class="status-dot" aria-hidden="true"></span>${status.label}</span>
+          </div>
+          <p class="status-copy">${status.copy}</p>
+
+          ${isStale ? buildStaleNotice() : ''}
+          ${warningMarkup}
+
+          <div class="budget-hero">
+            <span class="budget-label">Available task time</span>
+            <div class="budget-main">
+              <strong class="budget-value" data-testid="available-time">${formatDuration(result.available)}</strong>
+              <span class="budget-of" data-testid="working-budget">of ${formatDuration(result.workingBudget)} working budget</span>
+            </div>
+            <p class="budget-sub" data-testid="daily-requirement"><strong>Fixed daily requirement: ${formatDuration(result.dailyRequirement)}</strong> = ${formatDuration(result.workingBudget)} working + ${formatDuration(result.breakAllowance)} break</p>
+            <p class="budget-sub">Shift ${formatTimeRange(result.shift.start, result.shift.end)} · ${escapeHtml(activitySummaryText)}</p>
+          </div>
+
+          <div class="activity-facts">
+            <div class="fact"><span>Meetings</span><strong data-testid="meetings-total">${formatDuration(result.meetingTotal)}</strong></div>
+            <div class="fact"><span>Training</span><strong data-testid="training-total">${formatDuration(result.trainingTotal)}</strong></div>
+            <div class="fact"><span>Breaks</span><strong data-testid="breaks-total">${formatDuration(result.breakAllowance)}</strong></div>
+          </div>
+
+          <section class="result-section" aria-labelledby="recommendations-title">
+            <div class="section-top">
+              <h3 id="recommendations-title">Recommended task time</h3>
+              <span class="method-pill">${escapeHtml(result.methodLabel)}</span>
+            </div>
+            ${awaitingMarkup}
+            <ul class="rec-list">${buildRecommendedList(result)}</ul>
+            <div class="rec-reference">
+              <span>Original target total</span>
+              <strong data-testid="original-total">${formatDuration(result.totalOriginal)}</strong>
+            </div>
+            <div class="rec-total">
+              <span>Total recommended task time</span>
+              <strong data-testid="total-recommended">${formatDuration(result.totalRecommended)}</strong>
+            </div>
+          </section>
+
+          <div class="final-block">
+            <div class="final-copy">
+              <span>Final logged-time total</span>
+              <small>Tasks + meetings + training${result.includeBreaks ? ' + fixed 1h break' : ' · fixed break excluded'}</small>
+            </div>
+            <strong class="final-value" data-testid="final-logged-total">${formatDuration(result.finalLoggedTotal)}</strong>
+          </div>
+          <p class="break-log-note" data-testid="break-note">${escapeHtml(buildBreakNote(result))}</p>
+
+          <div class="budget-balance ${result.shortage > 0 ? 'is-over' : ''}">
+            <span>${result.shortage > 0 ? 'Over available task time' : 'Unallocated task time'}</span>
+            <strong data-testid="budget-balance">${formatDuration(result.shortage > 0 ? result.shortage : result.unallocated)}</strong>
+          </div>
+
+          ${notesMarkup}
+          ${buildCalculationDetails(result)}
+          <p class="results-footnote">Estimates use whole minutes. Original target durations stay visible even when a fitted recommendation is smaller.</p>
+        `;
+
+        if (detailsWasOpen) {
+          const details = els.resultsContent.querySelector('.calc-details');
+          if (details) {
+            details.open = true;
+          }
+        }
+      }
+      function renderAllFromState() {
+        els.shiftStart.value = state.shiftStart;
+        els.shiftEnd.value = state.shiftEnd;
+        els.includeBreaks.checked = state.includeBreaks;
+
+        const methodInput = form.querySelector(`input[name="allocation-method"][value="${state.method}"]`);
+        if (methodInput) {
+          methodInput.checked = true;
+        }
+
+        renderTaskRows();
+        renderActivities();
+        refreshResults();
+      }
+
+      function hasEnteredInformation() {
+        if (state.shiftStart !== DEFAULTS.shiftStart || state.shiftEnd !== DEFAULTS.shiftEnd) {
+          return true;
+        }
+        if (state.method !== DEFAULTS.method || state.includeBreaks !== DEFAULTS.includeBreaks) {
+          return true;
+        }
+        if (state.activities.length > 0) {
+          return true;
+        }
+        return CATEGORIES.some((category) => {
+          const categoryState = state.categories[category.id];
+          return categoryState.count !== '0'
+            || categoryState.rate !== String(category.defaultRate)
+            || categoryState.override !== '';
+        });
+      }
+
+      function resetCalculator(options = {}) {
+        const skipConfirmation = Boolean(options.skipConfirmation);
+        if (!skipConfirmation) {
+          syncStateFromDom();
+          if (hasEnteredInformation()) {
+            const confirmed = window.confirm('Reset all inputs and results? This will clear task counts, activities, overrides, and warnings. This cannot be undone.');
+            if (!confirmed) {
+              return;
+            }
+          }
+        }
+
+        state = createDefaultState();
+        lastValid = null;
+        previousValidity = null;
+        activityCounter = 0;
+        lastAnnouncement = '';
+        els.resultsContent.innerHTML = '';
+        renderAllFromState();
+        setAnnouncement('Calculator reset to its default values.');
+        if (!skipConfirmation) {
+          els.resetButton.focus();
+        }
+      }
+
+      function handleFormUpdate() {
+        syncStateFromDom();
+        updateActivityChips();
+        refreshResults();
+      }
+
+      function bindEvents() {
+        form.addEventListener('input', (event) => {
+          const target = event.target;
+          if (!(target instanceof Element)) {
+            return;
+          }
+          if (target.matches('select, input[type="radio"], input[type="checkbox"]')) {
+            return;
+          }
+          handleFormUpdate();
+        });
+
+        form.addEventListener('change', (event) => {
+          const target = event.target;
+          if (!(target instanceof Element)) {
+            return;
+          }
+
+          if (target.matches('[data-time-input]')) {
+            const parsedTime = parseTime(target.value);
+            if (parsedTime !== null) {
+              target.value = formatClock(parsedTime);
+            }
+            handleFormUpdate();
+            return;
+          }
+
+          if (!target.matches('select, input[type="radio"], input[type="checkbox"]')) {
+            return;
+          }
+          if (target.matches('.activity-mode')) {
+            applyActivityModes();
+          }
+          handleFormUpdate();
+        });
+
+        form.addEventListener('submit', (event) => {
+          event.preventDefault();
+        });
+
+        form.addEventListener('click', (event) => {
+          const target = event.target;
+          if (!(target instanceof Element)) {
+            return;
+          }
+
+          const addButton = target.closest('[data-add-activity]');
+          if (addButton) {
+            addActivity(addButton.dataset.addActivity);
+            return;
+          }
+
+          const removeButton = target.closest('[data-remove-activity]');
+          if (removeButton) {
+            removeActivity(removeButton.dataset.removeActivity);
+            return;
+          }
+
+          const clearButton = target.closest('[data-clear-override]');
+          if (clearButton) {
+            clearOverride(clearButton.dataset.clearOverride);
+          }
+        });
+
+        els.resetButton.addEventListener('click', () => {
+          resetCalculator();
+        });
+
+        window.addEventListener('pageshow', (event) => {
+          if (event.persisted) {
+            resetCalculator({ skipConfirmation: true });
+          }
+        });
+      }
+
+      renderAllFromState();
+      bindEvents();
+    })();
+  </script>
 </body>
 </html>
