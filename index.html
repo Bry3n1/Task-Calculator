@@ -2732,6 +2732,27 @@
       background: conic-gradient(from 0deg, #79adff 0deg, #8e63f2 var(--used-angle), #262a4e var(--used-angle) 360deg);
     }
     .orbit-allocation__legend span:first-child i { background: linear-gradient(135deg, #79adff, #8e63f2); }
+  
+    /* Overall task rate card */
+    .rate-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-top: 14px;
+      padding: 14px 18px;
+      border: 1px solid rgba(110, 165, 255, .30);
+      border-radius: 11px;
+      background: linear-gradient(120deg, rgba(48, 92, 205, .18), rgba(9, 9, 28, .64) 70%);
+      box-shadow: inset 0 1px 0 rgba(180, 205, 255, .06);
+    }
+    .rate-card__label { display: block; font: 700 .58rem var(--font-mono); letter-spacing: .14em; text-transform: uppercase; color: #8fb6ff; }
+    .rate-card__formula { margin: 6px 0 0; font-size: .72rem; line-height: 1.4; color: #a29ec0; }
+    .rate-card__value { flex: 0 0 auto; font-family: var(--font-sans); font-size: 1.75rem; line-height: 1; font-weight: 800; letter-spacing: -.03em; color: #eaf1ff; white-space: nowrap; }
+    .rate-card__value small { margin-left: 2px; font: 650 .64rem var(--font-mono); letter-spacing: .04em; color: #8fb6ff; }
+    @media (max-width: 520px) {
+      .rate-card { flex-direction: column; align-items: flex-start; gap: 10px; }
+    }
   </style>
 </head>
 <body>
@@ -3077,6 +3098,14 @@
         const hours = Math.floor(minuteValue / 60);
         const minutes = minuteValue % 60;
         return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+      }
+
+      function formatTaskRate(taskCount, workingMinutes) {
+        const hours = workingMinutes / 60;
+        if (!Number.isFinite(taskCount) || !Number.isFinite(hours) || hours <= 0) {
+          return '0';
+        }
+        return String(Math.round((taskCount / hours) * 100) / 100);
       }
 
       function formatDuration(totalMinutes) {
@@ -4338,6 +4367,14 @@
             <div class="fact"><span>Meetings</span><strong data-testid="meetings-total">${formatDuration(result.meetingTotal)}</strong></div>
             <div class="fact"><span>Training</span><strong data-testid="training-total">${formatDuration(result.trainingTotal)}</strong></div>
             <div class="fact"><span>Breaks</span><strong data-testid="breaks-total">${formatDuration(result.breakAllowance)}</strong></div>
+          </div>
+
+          <div class="rate-card" data-testid="overall-task-rate-card">
+            <div class="rate-card__copy">
+              <span class="rate-card__label">Overall task rate</span>
+              <p class="rate-card__formula" data-testid="overall-task-rate-formula">${result.totalCounts} ${result.totalCounts === 1 ? 'task' : 'tasks'} ÷ ${formatDuration(result.workingBudget)} working time</p>
+            </div>
+            <strong class="rate-card__value" data-testid="overall-task-rate">${formatTaskRate(result.totalCounts, result.workingBudget)} <small>tasks / hr</small></strong>
           </div>
 
           <section class="result-section" aria-labelledby="recommendations-title">
