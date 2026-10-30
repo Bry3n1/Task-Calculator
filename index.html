@@ -2753,6 +2753,60 @@
     @media (max-width: 520px) {
       .rate-card { flex-direction: column; align-items: flex-start; gap: 10px; }
     }
+  
+    /* Times to log */
+    .schedule-list { list-style: none; margin: 0; padding: 0; border: 1px solid rgba(150, 120, 225, .2); border-radius: 13px; background: rgba(9, 9, 28, .64); overflow: hidden; }
+    .schedule-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 14px 16px; border-top: 1px solid rgba(150, 120, 225, .14); }
+    .schedule-row:first-child { border-top: 0; }
+    .schedule-row__name { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-weight: 700; font-size: .9rem; color: #efe9ff; }
+    .schedule-row__meta { display: block; margin-top: 5px; font: .62rem var(--font-mono); color: #88809d; }
+    .schedule-row__time { text-align: right; font: 700 .92rem var(--font-mono); color: #8fb6ff; white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .schedule-row__time span { display: block; }
+    .schedule-row--fixed .schedule-row__time, .schedule-row--break .schedule-row__time { color: #c6aafa; }
+    .schedule-chip { font: 650 .54rem var(--font-mono); letter-spacing: .06em; text-transform: uppercase; padding: 3px 7px; border-radius: 5px; border: 1px solid rgba(174, 137, 238, .3); background: rgba(120, 75, 205, .14); color: #c6aafa; }
+    .schedule-note { margin: 10px 2px 0; font-size: .68rem; line-height: 1.5; color: #8f89a8; }
+    @media (max-width: 520px) {
+      .schedule-row { flex-direction: column; align-items: flex-start; gap: 8px; }
+      .schedule-row__time { text-align: left; white-space: normal; }
+    }
+  
+    /* Editable log times */
+    .schedule-row__time { display: flex; align-items: center; justify-content: flex-end; gap: 8px; white-space: nowrap; }
+    .schedule-row__time span { display: inline; }
+    .schedule-input {
+      width: 5.4ch; box-sizing: content-box; padding: 8px 10px; border-radius: 8px;
+      border: 1px solid rgba(110, 165, 255, .34); background: rgba(6, 8, 24, .8);
+      color: #8fb6ff; font: 700 .92rem var(--font-mono); text-align: center; font-variant-numeric: tabular-nums;
+      transition: border-color 140ms ease, box-shadow 140ms ease;
+    }
+    .schedule-input:hover { border-color: rgba(143, 182, 255, .6); }
+    .schedule-input:focus { outline: 2px solid #a98bff; outline-offset: 1px; border-color: #a98bff; }
+    .schedule-input[aria-invalid="true"] { border-color: var(--danger); }
+    .schedule-end { font: 700 .92rem var(--font-mono); color: #8fb6ff; font-variant-numeric: tabular-nums; }
+    .schedule-row--break .schedule-end, .schedule-row--fixed .schedule-end { color: #c6aafa; }
+    .schedule-error { display: block; margin-top: 6px; font-size: .68rem; line-height: 1.4; color: var(--danger); }
+    .schedule-reset {
+      margin-top: 12px; min-height: 38px; padding: 8px 14px; border-radius: 9px; cursor: pointer;
+      border: 1px solid rgba(174, 137, 238, .35); background: rgba(120, 75, 205, .12); color: #d3bafb;
+      font: 650 .7rem var(--font-sans); transition: border-color 140ms ease, background-color 140ms ease;
+    }
+    .schedule-reset:hover { border-color: #a98bff; background: rgba(120, 75, 205, .22); }
+    .schedule-row { flex-wrap: wrap; }
+    .schedule-row > div:first-child { flex: 1 1 140px; min-width: 0; }
+    .schedule-row__time { flex-wrap: wrap; }
+    @media (max-width: 520px) { .schedule-row__time { justify-content: flex-start; white-space: normal; } }
+  
+    /* Read-only view + Edit button */
+    .schedule-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+    .schedule-edit {
+      min-height: 32px; padding: 6px 13px; border-radius: 100px; cursor: pointer;
+      border: 1px solid rgba(174, 137, 238, .4); background: rgba(120, 75, 205, .14); color: #d3bafb;
+      font: 650 .62rem var(--font-mono); letter-spacing: .06em; text-transform: uppercase;
+      transition: border-color 140ms ease, background-color 140ms ease;
+    }
+    .schedule-edit:hover { border-color: #a98bff; background: rgba(120, 75, 205, .26); }
+    .schedule-row__time--view { flex-direction: column; align-items: flex-end; gap: 3px; }
+    @media (max-width: 520px) { .schedule-row__time--view { align-items: flex-start; } }
   </style>
 </head>
 <body>
@@ -3107,6 +3161,255 @@
         }
         return String(Math.round((taskCount / hours) * 100) / 100);
       }
+
+      let scheduleOverrides = {};
+      let scheduleDrafts = {};
+      let scheduleErrors = {};
+      let scheduleResultRef = null;
+      let scheduleEditing = false;
+
+      function resetSchedule() {
+        scheduleOverrides = {};
+        scheduleDrafts = {};
+        scheduleErrors = {};
+        scheduleEditing = false;
+      }
+
+      function buildLogSchedule(result) {
+        const shiftStart = result.shift && result.shift.start;
+        if (!Number.isFinite(shiftStart)) {
+          return { rows: [], notes: [] };
+        }
+
+        const activities = result.model.activities;
+        const timed = activities.filter((activity) => activity.mode === 'timed' && activity.start !== null && activity.end !== null);
+        const busy = timed.map((activity) => ({ start: activity.start, end: activity.end, label: activity.label }));
+        const fixedRows = timed.map((activity) => ({
+          kind: 'fixed', key: '', name: activity.label, meta: `${formatDuration(activity.duration)} · set time`,
+          minutes: activity.duration, segments: [{ start: activity.start, end: activity.end }], chip: '', error: ''
+        }));
+
+        const items = ['adhoc', 'triage', 'peer']
+          .map((id) => result.categories.find((category) => category.id === id))
+          .filter((category) => category && category.recommended > 0)
+          .map((category) => ({
+            kind: 'task', key: category.id, name: category.name, minutes: category.recommended,
+            meta: `${category.count} ${category.count === 1 ? 'task' : 'tasks'} · ${formatDuration(category.recommended)}${category.manual ? ' · manual override' : ''}`,
+            segments: null, chip: '', error: ''
+          }));
+        const flexibleCount = activities.filter((activity) => activity.mode === 'duration' && activity.type !== 'break' && activity.duration > 0).length;
+        activities.filter((activity) => activity.mode === 'duration' && activity.type !== 'break' && activity.duration > 0).forEach((activity) => {
+          items.push({ kind: 'flex', key: activity.id, name: activity.label, minutes: activity.duration, meta: formatDuration(activity.duration), segments: null, chip: 'No set time', error: '' });
+        });
+        const breakMinutes = result.includeBreaks ? Math.max(0, result.breakAllowance - result.breakEntryTotal) : 0;
+        const breakItem = breakMinutes > 0 && items.length > 0
+          ? { kind: 'break', key: 'break', name: 'Break', minutes: breakMinutes, meta: `${formatDuration(breakMinutes)} · fixed daily break`, segments: null, chip: '', error: '' }
+          : null;
+
+        function placeFrom(start, minutes) {
+          const segments = [];
+          let cursor = start;
+          let left = minutes;
+          busy.sort((first, second) => first.start - second.start);
+          while (left > 0) {
+            const inside = busy.find((item) => cursor >= item.start && cursor < item.end);
+            if (inside) {
+              cursor = inside.end;
+              continue;
+            }
+            const next = busy.find((item) => item.start > cursor);
+            const take = Math.min(left, next ? next.start - cursor : left);
+            segments.push({ start: cursor, end: cursor + take });
+            cursor += take;
+            left -= take;
+          }
+          return segments;
+        }
+        function freeSlot(start, length) {
+          let slot = start;
+          for (let moved = true; moved;) {
+            moved = false;
+            busy.forEach((item) => {
+              if (slot < item.end && slot + length > item.start) {
+                slot = item.end;
+                moved = true;
+              }
+            });
+          }
+          return slot;
+        }
+        function commit(item, segments) {
+          item.segments = segments;
+          segments.forEach((segment) => busy.push({ start: segment.start, end: segment.end, label: item.name }));
+        }
+
+        const everything = breakItem ? items.concat(breakItem) : items;
+        everything
+          .filter((item) => scheduleOverrides[item.key] !== undefined)
+          .sort((first, second) => scheduleOverrides[first.key] - scheduleOverrides[second.key])
+          .forEach((item) => {
+            const wanted = scheduleOverrides[item.key];
+            item.chip = item.chip ? `${item.chip} · Edited` : 'Edited';
+            if (item.kind === 'break') {
+              const hit = busy.find((other) => wanted < other.end && wanted + item.minutes > other.start);
+              if (hit) {
+                item.error = `Overlaps ${hit.label}.`;
+              }
+              commit(item, [{ start: wanted, end: wanted + item.minutes }]);
+            } else {
+              const hit = busy.find((other) => wanted >= other.start && wanted < other.end);
+              const segments = placeFrom(wanted, item.minutes);
+              if (hit) {
+                item.error = `Starts during ${hit.label}; runs from ${formatClock(segments[0].start)}.`;
+              }
+              commit(item, segments);
+            }
+          });
+
+        const dayWork = items.reduce((total, item) => total + item.minutes, 0)
+          + fixedRows.reduce((total, row) => total + row.minutes, 0);
+        if (breakItem && !breakItem.segments && shiftStart + dayWork > 720) {
+          const slot = freeSlot(Math.max(720, shiftStart), breakItem.minutes);
+          commit(breakItem, [{ start: slot, end: slot + breakItem.minutes }]);
+        }
+        let cursor = shiftStart;
+        items.filter((item) => !item.segments).forEach((item) => {
+          const segments = placeFrom(cursor, item.minutes);
+          commit(item, segments);
+          cursor = segments[segments.length - 1].end;
+        });
+        if (breakItem && !breakItem.segments) {
+          const slot = freeSlot(cursor, breakItem.minutes);
+          commit(breakItem, [{ start: slot, end: slot + breakItem.minutes }]);
+        }
+
+        const rows = everything.concat(fixedRows);
+        rows.sort((first, second) => first.segments[0].start - second.segments[0].start);
+
+        const notes = [];
+        if (items.length > 0) {
+          notes.push('Tasks run in this order from the shift start: Adhoc Task, Full Triage, Peer Review. Press Edit times to move a block; its length stays fixed and the other blocks flow around it.');
+        }
+        if (flexibleCount > 0) {
+          notes.push('Meetings or training without start and end times are placed after the tasks. Add times to fix them in the day.');
+        }
+        const latestEnd = rows.reduce((latest, row) => Math.max(latest, row.segments[row.segments.length - 1].end), shiftStart);
+        if (Number.isFinite(result.shift.end) && latestEnd > result.shift.end) {
+          notes.push(`This schedule ends at ${formatClock(latestEnd)}, after the shift end (${formatClock(result.shift.end)}).`);
+        }
+        return { rows, notes };
+      }
+
+      function buildScheduleMarkup(result) {
+        scheduleResultRef = result;
+        const schedule = buildLogSchedule(result);
+        const hasEdits = Object.keys(scheduleOverrides).length > 0 || Object.keys(scheduleDrafts).length > 0;
+        const rowsMarkup = schedule.rows.map((row) => {
+          const first = row.segments[0];
+          const rest = row.segments.slice(1).map((segment) => ` · ${formatClock(segment.start)} – ${formatClock(segment.end)}`).join('');
+          const error = scheduleErrors[row.key] || row.error;
+          const chip = row.chip ? `<span class="schedule-chip">${escapeHtml(row.chip)}</span>` : '';
+          let time;
+          if (row.key && scheduleEditing) {
+            const key = escapeHtml(row.key);
+            const value = scheduleDrafts[row.key] !== undefined ? scheduleDrafts[row.key] : formatClock(first.start);
+            time = `<label class="sr-only" for="sched-${key}">Start time for ${escapeHtml(row.name)}</label>`
+              + `<input class="schedule-input" type="text" id="sched-${key}" data-schedule-key="${key}" value="${escapeHtml(value)}" inputmode="numeric" maxlength="5" placeholder="HH:MM" autocomplete="off"${error ? ` aria-invalid="true" aria-describedby="sched-err-${key}"` : ''}>`
+              + `<span class="schedule-end">– ${formatClock(first.end)}${rest}</span>`;
+          } else {
+            time = row.segments
+              .map((segment) => `<span class="schedule-end">${formatClock(segment.start)} – ${formatClock(segment.end)}</span>`)
+              .join('');
+          }
+          const errorMarkup = error ? `<span class="schedule-error" id="sched-err-${escapeHtml(row.key)}">${escapeHtml(error)}</span>` : '';
+          return `
+            <li class="schedule-row schedule-row--${row.kind}">
+              <div>
+                <span class="schedule-row__name">${escapeHtml(row.name)}${chip}</span>
+                <span class="schedule-row__meta">${escapeHtml(row.meta)}</span>
+                ${errorMarkup}
+              </div>
+              <div class="schedule-row__time${row.key && scheduleEditing ? '' : ' schedule-row__time--view'}" data-testid="schedule-time">${time}</div>
+            </li>`;
+        }).join('');
+        const notesMarkup = schedule.notes.map((note) => `<p class="schedule-note">${escapeHtml(note)}</p>`).join('');
+        const resetMarkup = hasEdits ? '<button type="button" class="schedule-reset" data-schedule-reset>Reset to suggested times</button>' : '';
+        const body = schedule.rows.length > 0
+          ? `<ol class="schedule-list">${rowsMarkup}</ol>${notesMarkup}${resetMarkup}`
+          : '<p class="schedule-note">Enter task counts to see the times to log.</p>';
+        return `
+          <section class="result-section" aria-labelledby="schedule-title" data-testid="log-schedule">
+            <div class="section-top">
+              <h3 id="schedule-title">Times to log</h3>
+              <div class="schedule-actions">
+                <span class="method-pill">From ${formatClock(result.shift.start)}</span>
+                ${schedule.rows.length > 0 ? `<button type="button" class="schedule-edit" data-schedule-edit>${scheduleEditing ? 'Done' : 'Edit times'}</button>` : ''}
+              </div>
+            </div>
+            ${body}
+          </section>`;
+      }
+
+      function rerenderSchedule() {
+        window.setTimeout(() => {
+          const active = document.activeElement;
+          const focusKey = active && active.dataset ? active.dataset.scheduleKey : undefined;
+          const focusEdit = Boolean(active && active.hasAttribute && active.hasAttribute('data-schedule-edit'));
+          const section = els.resultsContent.querySelector('[data-testid="log-schedule"]');
+          if (!section || !scheduleResultRef) {
+            return;
+          }
+          section.outerHTML = buildScheduleMarkup(scheduleResultRef);
+          const target = focusKey !== undefined
+            ? els.resultsContent.querySelector(`[data-schedule-key="${CSS.escape(focusKey)}"]`)
+            : null;
+          if (target) {
+            target.focus();
+          } else if (focusEdit) {
+            const editButton = els.resultsContent.querySelector('[data-schedule-edit]');
+            if (editButton) {
+              editButton.focus();
+            }
+          }
+        }, 0);
+      }
+
+      els.resultsContent.addEventListener('change', (event) => {
+        const input = event.target.closest('[data-schedule-key]');
+        if (!input) {
+          return;
+        }
+        const key = input.dataset.scheduleKey;
+        const minutes = parseTime(input.value.trim());
+        if (minutes === null) {
+          scheduleErrors[key] = 'Use a 24-hour time (HH:MM).';
+          scheduleDrafts[key] = input.value;
+        } else {
+          delete scheduleErrors[key];
+          delete scheduleDrafts[key];
+          scheduleOverrides[key] = minutes;
+        }
+        rerenderSchedule();
+      });
+
+      els.resultsContent.addEventListener('click', (event) => {
+        if (event.target.closest('[data-schedule-edit]')) {
+          scheduleEditing = !scheduleEditing;
+          if (!scheduleEditing) {
+            scheduleDrafts = {};
+            scheduleErrors = {};
+          }
+          rerenderSchedule();
+          return;
+        }
+        if (!event.target.closest('[data-schedule-reset]')) {
+          return;
+        }
+        const keepEditing = scheduleEditing;
+        resetSchedule();
+        scheduleEditing = keepEditing;
+        rerenderSchedule();
+      });
 
       function formatDuration(totalMinutes) {
         const safeMinutes = Math.max(0, Math.round(Number.isFinite(totalMinutes) ? totalMinutes : 0));
@@ -4394,6 +4697,8 @@
             </div>
           </section>
 
+          ${buildScheduleMarkup(result)}
+
           <div class="final-block">
             <div class="final-copy">
               <span>Final logged-time total</span>
@@ -4465,6 +4770,7 @@
           }
         }
 
+        resetSchedule();
         state = createDefaultState();
         lastValid = null;
         previousValidity = null;
